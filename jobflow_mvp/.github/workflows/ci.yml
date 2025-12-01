@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: jobflow_mvp
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v2
+      - run: uv sync
+      - run: uv run ruff check .
+        name: Ruff lint
+      - run: uv run ruff format --check .
+        name: Ruff format check
+      - run: uv run mypy .
+        name: Mypy
+      - run: uv run pytest
+        name: Pytest
+      - run: uv run pre-commit run --all-files
+        name: Pre-commit hooks
