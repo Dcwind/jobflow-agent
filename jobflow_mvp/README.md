@@ -22,18 +22,23 @@ An enterprise-ready scaffold for a Job Application Tracker Agent powered by Goog
 
 ## Getting Started
 
-1. **Install uv** (once): `pip install uv` or grab the standalone binary from Astral.
-2. **Sync dependencies**:
+1. **Install uv** (once): `pip install uv` or use Astral’s curl installer.
+2. **Sync dependencies** from the repository root so uv can locate this package:
    ```sh
-   cd jobflow_mvp
-   uv sync --all-extras
+   cd /workspaces/jobflow-agent            # repo root
+   uv sync --project jobflow_mvp
    ```
-3. **Provide a Gemini API key**: set `export GOOGLE_API_KEY="<your key>"` (ADK automatically picks up configuration).
-4. **Run the agent**:
+3. **Set ADK credentials** (Gemini key):
    ```sh
-   uv run python main.py "https://example.com/job-posting"
+   export GOOGLE_API_KEY="<your key>"
    ```
-   The CLI prints a success message and appends the job entry to `data/jobs.csv` (created if missing). Override the CSV location during development or testing with `JOBFLOW_DATA_PATH=/tmp/jobs.csv`.
+4. **Run the agent (preferred)**:
+   ```sh
+   uv run --project jobflow_mvp python -m jobflow_mvp.main "https://example.com/job-posting"
+   ```
+   Using `--project jobflow_mvp` ensures the interpreter loads this package even if you run from the repo root. The CLI prints a success message and appends the job entry to `data/jobs.csv` (created if missing). Override the CSV location during development/testing with `JOBFLOW_DATA_PATH=/tmp/jobs.csv`.
+
+> Legacy shortcut: `cd jobflow_mvp && uv run python main.py ...` also works but requires adjusting `PYTHONPATH`; the module-based invocation above is the more portable, “industry standard” approach.
 
 ## Development Workflow
 
