@@ -13,23 +13,23 @@ This repository houses the Jobflow Agent MVP alongside future iterations. The cu
 
 ```sh
 cd /workspaces/jobflow-agent           # repo root
-uv sync --project jobflow_mvp          # install deps into jobflow_mvp/.venv
+make sync                              # installs deps via uv
 export GOOGLE_API_KEY="<your key>"     # ADK credentials
-uv run --project jobflow_mvp python -m jobflow_mvp.main "https://example.com/job"
+make run URL="https://example.com/job"
 ```
 
-The command above uses uv’s `--project` flag so Python can import `jobflow_mvp.*` modules without modifying `PYTHONPATH`. Each run prints the scraped title/company and appends a timestamped row to `jobflow_mvp/data/jobs.csv`.
+`make run` wraps `uv run --project jobflow_mvp python -m jobflow_mvp.main ...`, keeping commands short while still using the package-local virtual environment. Each run prints the scraped title/company and appends a timestamped row to `jobflow_mvp/data/jobs.csv`.
 
 ## Development Commands
 
 All quality gates mirror CI; run them from the repo root:
 
 ```sh
-uv run --project jobflow_mvp ruff check jobflow_mvp
-uv run --project jobflow_mvp ruff format --check jobflow_mvp
-uv run --project jobflow_mvp mypy jobflow_mvp
-uv run --project jobflow_mvp pytest jobflow_mvp/tests
-uv run --project jobflow_mvp pre-commit run --all-files
+make lint
+make fmt
+make type
+make test
+make precommit
 ```
 
 ## Extending Beyond the MVP

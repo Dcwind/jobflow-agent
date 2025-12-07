@@ -23,10 +23,10 @@ An enterprise-ready scaffold for a Job Application Tracker Agent powered by Goog
 ## Getting Started
 
 1. **Install uv** (once): `pip install uv` or use Astral’s curl installer.
-2. **Sync dependencies** from the repository root so uv can locate this package:
+2. **Sync dependencies** (from repo root) so uv can locate this package:
    ```sh
    cd /workspaces/jobflow-agent            # repo root
-   uv sync --project jobflow_mvp
+   make sync
    ```
 3. **Set ADK credentials** (Gemini key):
    ```sh
@@ -34,21 +34,21 @@ An enterprise-ready scaffold for a Job Application Tracker Agent powered by Goog
    ```
 4. **Run the agent (preferred)**:
    ```sh
-   uv run --project jobflow_mvp python -m jobflow_mvp.main "https://example.com/job-posting"
+   make run URL="https://example.com/job-posting"
    ```
-   Using `--project jobflow_mvp` ensures the interpreter loads this package even if you run from the repo root. The CLI prints a success message and appends the job entry to `data/jobs.csv` (created if missing). Override the CSV location during development/testing with `JOBFLOW_DATA_PATH=/tmp/jobs.csv`.
+   The Makefile wraps `uv run --project jobflow_mvp python -m jobflow_mvp.main ...` so commands stay short. Override the CSV location during development/testing with `JOBFLOW_DATA_PATH=/tmp/jobs.csv`.
 
 > Legacy shortcut: `cd jobflow_mvp && uv run python main.py ...` also works but requires adjusting `PYTHONPATH`; the module-based invocation above is the more portable, “industry standard” approach.
 
 ## Development Workflow
 
-- `uv run ruff check .` – static analysis
-- `uv run ruff format .` – auto-format
-- `uv run mypy .` – strict typing
-- `uv run pytest` – run the tests
-- `uv run pre-commit run --all-files` – checks identical to CI
+- `make lint` – Ruff static analysis
+- `make fmt` – Ruff formatting pass
+- `make type` – Mypy strict typing
+- `make test` – Run Pytest suite
+- `make precommit` – Run the same hooks as CI
 
-A GitHub Actions workflow (`.github/workflows/ci.yml`) mirrors the above steps for every push and pull request.
+All targets wrap the corresponding `uv run --project jobflow_mvp ...` commands. The GitHub Actions workflow (`.github/workflows/ci.yml`) mirrors these steps for every push and pull request.
 
 ## How to Extend
 
