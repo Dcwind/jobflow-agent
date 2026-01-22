@@ -204,8 +204,21 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Claude Code
+.claude/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
 __marimo__/
 jobflow_mvp/data/
+
+# SQLite databases
+*.db
+*.db-journal
+data/*.db
+
+# Next.js
+web/.next/
+web/out/
+web/node_modules/
