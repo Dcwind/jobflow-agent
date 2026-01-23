@@ -6,9 +6,9 @@ An intelligent job application tracking platform that helps job seekers organize
 ## Current: Web MVP
 - [x] Job URL extraction (title, company, location, salary, description)
 - [x] Fallback chain: BeautifulSoup → Playwright → LLM
-- [ ] SQLite storage with PII filtering
-- [ ] FastAPI backend with CRUD + export
-- [ ] Next.js frontend with job table
+- [x] SQLite storage with PII filtering
+- [x] FastAPI backend with CRUD + export
+- [x] Next.js frontend with job table
 - [ ] Railway deployment
 
 ## Near-term (Post-MVP)
@@ -27,6 +27,8 @@ An intelligent job application tracking platform that helps job seekers organize
 - **AI Application Drafting** — Generate tailored cover letters and responses
 
 ## Technical Debt & Improvements
+- [ ] Fix: Handle jobLocation as array in JSON-LD extraction
+- [ ] Fix: Display job description in frontend (expandable row or modal)
 - [ ] Add Alembic migrations for schema changes
 - [ ] Implement caching for repeated URL fetches
 - [ ] Add rate limiting per user (when auth is added)
