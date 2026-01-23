@@ -9,7 +9,7 @@ An intelligent job application tracking platform that helps job seekers organize
 - [x] SQLite storage with PII filtering
 - [x] FastAPI backend with CRUD + export
 - [x] Next.js frontend with job table
-- [ ] Railway deployment
+- [x] Railway deployment config
 
 ## Near-term (Post-MVP)
 - **Fit Score Agent** — Compare jobs against user's CV/skills, rank opportunities
