@@ -1,0 +1,213 @@
+"""Job CRUD and export endpoints."""
+
+import csv
+import io
+from math import ceil
+
+from fastapi import APIRouter, Depends, HTTPException, Response
+from shared.db.models import Job
+from shared.db.session import get_db
+from sqlalchemy.orm import Session
+
+from jobflow_api.config import get_settings
+from jobflow_api.schemas.job import (
+    JobCreateRequest,
+    JobCreateResponse,
+    JobCreateResult,
+    JobFlagRequest,
+    JobListResponse,
+    JobResponse,
+    JobUpdateRequest,
+)
+from jobflow_api.services.scraper import scrape_multiple_jobs
+
+router = APIRouter(prefix="/api/jobs", tags=["jobs"])
+
+
+@router.post("", response_model=JobCreateResponse)
+def create_jobs(
+    request: JobCreateRequest,
+    db: Session = Depends(get_db),
+) -> JobCreateResponse:
+    """Scrape and store jobs from URLs."""
+    settings = get_settings()
+    results = scrape_multiple_jobs(
+        db,
+        request.urls,
+        use_playwright=settings.use_playwright,
+        use_llm_fallback=settings.use_llm_fallback,
+        use_llm_validation=settings.use_llm_validation,
+    )
+
+    create_results = []
+    for url, job, error in results:
+        if job:
+            create_results.append(
+                JobCreateResult(
+                    url=url,
+                    success=True,
+                    job=JobResponse.model_validate(job),
+                )
+            )
+        else:
+            create_results.append(
+                JobCreateResult(
+                    url=url,
+                    success=False,
+                    error=error or "Unknown error",
+                )
+            )
+
+    succeeded = sum(1 for r in create_results if r.success)
+    return JobCreateResponse(
+        results=create_results,
+        total=len(create_results),
+        succeeded=succeeded,
+        failed=len(create_results) - succeeded,
+    )
+
+
+@router.get("", response_model=JobListResponse)
+def list_jobs(
+    page: int = 1,
+    per_page: int = 20,
+    company: str | None = None,
+    flagged: bool | None = None,
+    db: Session = Depends(get_db),
+) -> JobListResponse:
+    """List jobs with pagination and filtering."""
+    if page < 1:
+        page = 1
+    if per_page < 1 or per_page > 100:
+        per_page = 20
+
+    query = db.query(Job)
+
+    # Apply filters
+    if company:
+        query = query.filter(Job.company.ilike(f"%{company}%"))
+    if flagged is not None:
+        query = query.filter(Job.flagged == (1 if flagged else 0))
+
+    # Get total count
+    total = query.count()
+    pages = ceil(total / per_page) if total > 0 else 1
+
+    # Paginate
+    jobs = query.order_by(Job.created_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
+
+    return JobListResponse(
+        jobs=[JobResponse.model_validate(job) for job in jobs],
+        total=total,
+        page=page,
+        per_page=per_page,
+        pages=pages,
+    )
+
+
+@router.get("/export")
+def export_jobs(
+    company: str | None = None,
+    flagged: bool | None = None,
+    db: Session = Depends(get_db),
+) -> Response:
+    """Export jobs as CSV."""
+    query = db.query(Job)
+
+    if company:
+        query = query.filter(Job.company.ilike(f"%{company}%"))
+    if flagged is not None:
+        query = query.filter(Job.flagged == (1 if flagged else 0))
+
+    jobs = query.order_by(Job.created_at.desc()).all()
+
+    # Build CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        ["id", "url", "title", "company", "location", "salary", "description", "created_at"]
+    )
+    for job in jobs:
+        writer.writerow(
+            [
+                job.id,
+                job.url,
+                job.title,
+                job.company,
+                job.location or "",
+                job.salary or "",
+                job.description or "",
+                job.created_at.isoformat() if job.created_at else "",
+            ]
+        )
+
+    csv_content = output.getvalue()
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=jobs.csv"},
+    )
+
+
+@router.get("/{job_id}", response_model=JobResponse)
+def get_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+) -> JobResponse:
+    """Get a single job by ID."""
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return JobResponse.model_validate(job)
+
+
+@router.patch("/{job_id}", response_model=JobResponse)
+def update_job(
+    job_id: int,
+    request: JobUpdateRequest,
+    db: Session = Depends(get_db),
+) -> JobResponse:
+    """Update job fields (for user corrections)."""
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    update_data = request.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(job, field, value)
+
+    db.commit()
+    db.refresh(job)
+    return JobResponse.model_validate(job)
+
+
+@router.patch("/{job_id}/flag", response_model=JobResponse)
+def flag_job(
+    job_id: int,
+    request: JobFlagRequest,
+    db: Session = Depends(get_db),
+) -> JobResponse:
+    """Flag or unflag a job for review."""
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    job.flagged = 1 if request.flagged else 0
+    db.commit()
+    db.refresh(job)
+    return JobResponse.model_validate(job)
+
+
+@router.delete("/{job_id}")
+def delete_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Delete a job."""
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    db.delete(job)
+    db.commit()
+    return {"deleted": True, "id": job_id}
