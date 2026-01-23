@@ -1,0 +1,13 @@
+providers = ["python"]
+
+[phases.setup]
+nixPkgs = ["...", "gcc"]
+
+[phases.install]
+cmds = [
+    "curl -LsSf https://astral.sh/uv/install.sh | sh",
+    "~/.local/bin/uv sync --project jobflow_api"
+]
+
+[start]
+cmd = "~/.local/bin/uv run --project jobflow_api uvicorn jobflow_api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
