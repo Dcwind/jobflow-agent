@@ -207,7 +207,9 @@ class TestFullExtractionFlow:
             assert response.status_code == 200
             data = response.json()
             assert data["failed"] == 1
-            assert "Invalid" in data["results"][0]["error"] or data["results"][0]["error"] is not None
+            assert (
+                "Invalid" in data["results"][0]["error"] or data["results"][0]["error"] is not None
+            )
 
 
 class TestJobCRUDFlow:

@@ -33,3 +33,4 @@ An intelligent job application tracking platform that helps job seekers organize
 - [ ] Implement caching for repeated URL fetches
 - [ ] Add rate limiting per user (when auth is added)
 - [ ] Set up LangSmith/Langfuse for agent observability
+- [ ] Migrate from Nixpacks to Dockerfile ([plan](docs/dockerfile-migration.md))
