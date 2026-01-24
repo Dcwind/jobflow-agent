@@ -9,17 +9,25 @@ An intelligent job application tracking platform that helps job seekers organize
 - [x] SQLite storage with PII filtering
 - [x] FastAPI backend with CRUD + export
 - [x] Next.js frontend with job table
-- [x] Railway deployment config
+- [x] Railway backend deployment
+- [x] Vercel frontend deployment
+
+## Next Up
+- [ ] **API Protection** — Next.js API proxy with server-side API key (block direct backend abuse)
 
 ## Near-term (Post-MVP)
+- **User Authentication** — Better Auth (self-hosted, own your data)
+  - Email/password + social OAuth
+  - Session management
+  - Multi-user data isolation
 - **Fit Score Agent** — Compare jobs against user's CV/skills, rank opportunities
 - **Pattern Analysis** — Identify trends in applications (skills gaps, common requirements)
-- **User Authentication** — Multi-user support with data isolation
 
 ## Medium-term
+- **Browser Extension** — One-click job extraction (Chrome Manifest V3)
 - **Hackathon/Event Suggestions** — Surface relevant networking opportunities
 - **Networking Guides** — Curated resources for professional growth
-- **Browser Extension** — One-click job extraction (Chrome Manifest V3)
+- **Subscriptions** — Stripe direct integration (free tier, pro tier)
 
 ## Long-term
 - **Mobile App** — Track applications on the go
