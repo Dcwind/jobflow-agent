@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import {
   Table,
   TableBody,
@@ -126,7 +126,7 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto scroll-padding-fix">
       <Table>
         <TableHeader>
           <TableRow>
@@ -141,8 +141,8 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
         </TableHeader>
         <TableBody>
           {jobs.map((job) => (
-            <>
-              <TableRow key={job.id} className={job.flagged ? "bg-yellow-50" : ""}>
+            <Fragment key={job.id}>
+              <TableRow className={job.flagged ? "bg-yellow-50" : ""}>
                 <TableCell className="font-medium">
                   {renderCell(job, "title")}
                 </TableCell>
@@ -162,19 +162,19 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
                   )}
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-1">
-                    {job.description && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setExpandedId(expandedId === job.id ? null : job.id)}
-                      >
-                        {expandedId === job.id ? "Hide" : "Details"}
-                      </Button>
-                    )}
+                  <div className="flex gap-1 flex-nowrap items-center">
                     <Button
                       size="sm"
-                      variant="ghost"
+                      variant="outline"
+                      className="min-w-[70px]"
+                      onClick={() => setExpandedId(expandedId === job.id ? null : job.id)}
+                      disabled={!job.description}
+                    >
+                      {expandedId === job.id ? "Hide" : "Details"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => handleFlag(job)}
                       disabled={loading === job.id}
                       title={job.flagged ? "Unflag" : "Flag for review"}
@@ -183,26 +183,27 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
                     </Button>
                     <Button
                       size="sm"
-                      variant="ghost"
-                      className="text-red-600 hover:text-red-700"
+                      variant="outline"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       onClick={() => handleDelete(job)}
                       disabled={loading === job.id}
                     >
                       Delete
                     </Button>
-                    <a
-                      href={job.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline text-sm px-2 py-1"
-                    >
-                      View
-                    </a>
+                    <Button size="sm" variant="outline" asChild>
+                      <a
+                        href={job.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View
+                      </a>
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
               {expandedId === job.id && job.description && (
-                <TableRow key={`${job.id}-desc`} className="bg-gray-50">
+                <TableRow className="bg-gray-50">
                   <TableCell colSpan={7} className="py-4">
                     <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-64 overflow-y-auto">
                       {job.description}
@@ -210,7 +211,7 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
                   </TableCell>
                 </TableRow>
               )}
-            </>
+            </Fragment>
           ))}
         </TableBody>
       </Table>

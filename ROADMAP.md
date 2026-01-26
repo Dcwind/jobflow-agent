@@ -38,6 +38,8 @@ An intelligent job application tracking platform that helps job seekers organize
 ## Technical Debt & Improvements
 - [x] Fix: Handle jobLocation as array in JSON-LD extraction
 - [x] Fix: Display job description in frontend (expandable row)
+- [x] Fix: Table layout shifting when flagging jobs (overflow-hidden on container)
+- [ ] Fix: Right padding disappears at <351px viewport width (CSS spec limitation)
 - [ ] Add Alembic migrations for schema changes
 - [ ] Implement caching for repeated URL fetches
 - [ ] Add rate limiting per user (when auth is added)
