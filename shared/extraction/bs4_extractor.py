@@ -118,22 +118,40 @@ def _extract_company(soup: BeautifulSoup, json_ld: dict | None) -> str:
     return DEFAULT_COMPANY
 
 
+def _location_from_place(place: dict) -> str | None:
+    """Extract location string from a Place object."""
+    address = place.get("address", {})
+    if isinstance(address, dict):
+        parts = [
+            address.get("addressLocality"),
+            address.get("addressRegion"),
+            address.get("addressCountry"),
+        ]
+        location = ", ".join(p for p in parts if p)
+        if location:
+            return location
+    return None
+
+
 def _extract_location(soup: BeautifulSoup, json_ld: dict | None) -> str | None:
     """Extract job location."""
     # Try JSON-LD jobLocation
     if json_ld:
         job_location = json_ld.get("jobLocation")
-        if isinstance(job_location, dict):
-            address = job_location.get("address", {})
-            if isinstance(address, dict):
-                parts = [
-                    address.get("addressLocality"),
-                    address.get("addressRegion"),
-                    address.get("addressCountry"),
-                ]
-                location = ", ".join(p for p in parts if p)
-                if location:
-                    return location
+        if isinstance(job_location, list):
+            # Handle array of Place objects
+            locations = []
+            for place in job_location:
+                if isinstance(place, dict):
+                    loc = _location_from_place(place)
+                    if loc:
+                        locations.append(loc)
+            if locations:
+                return "; ".join(locations)
+        elif isinstance(job_location, dict):
+            loc = _location_from_place(job_location)
+            if loc:
+                return loc
         elif isinstance(job_location, str):
             return job_location.strip()
 
