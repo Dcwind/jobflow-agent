@@ -8,6 +8,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+import trafilatura
 from bs4 import BeautifulSoup
 
 DEFAULT_TITLE = "Unknown Title"
@@ -231,14 +232,23 @@ def _clean_description(text: str) -> str:
     return text[:10000] if text else ""
 
 
-def _extract_description(soup: BeautifulSoup, json_ld: dict | None) -> str | None:
-    """Extract job description."""
-    # Try JSON-LD description
+def _extract_description(
+    soup: BeautifulSoup, json_ld: dict | None, raw_html: str | None = None
+) -> str | None:
+    """Extract job description using multiple strategies.
+
+    Pipeline:
+    1. JSON-LD structured data (most reliable)
+    2. CSS selectors for common job description containers
+    3. Trafilatura content extraction (works on any page structure)
+    """
+    # Strategy 1: Try JSON-LD description
     if json_ld and json_ld.get("description"):
         desc = _clean_description(str(json_ld["description"]))
-        return desc if desc else None
+        if desc:
+            return desc
 
-    # Try common description containers (in order of specificity)
+    # Strategy 2: Try common description containers (in order of specificity)
     selectors = [
         "[class*='job-description']",
         "[class*='jobDescription']",
@@ -256,11 +266,17 @@ def _extract_description(soup: BeautifulSoup, json_ld: dict | None) -> str | Non
             if len(text) > 200:  # Meaningful description length
                 return text
 
+    # Strategy 3: Use trafilatura for automatic content extraction
+    if raw_html:
+        extracted = trafilatura.extract(raw_html, include_comments=False, include_tables=False)
+        if extracted and len(extracted) > 200:
+            return _clean_description(extracted)
+
     return None
 
 
 def extract_with_bs4(html: str) -> ExtractionResult:
-    """Extract job fields using BeautifulSoup and JSON-LD."""
+    """Extract job fields using BeautifulSoup, JSON-LD, and trafilatura."""
     soup = BeautifulSoup(html or "", "html.parser")
     json_ld = _parse_json_ld(soup)
 
@@ -269,7 +285,7 @@ def extract_with_bs4(html: str) -> ExtractionResult:
         company=_extract_company(soup, json_ld),
         location=_extract_location(soup, json_ld),
         salary=_extract_salary(soup, json_ld),
-        description=_extract_description(soup, json_ld),
+        description=_extract_description(soup, json_ld, html),
         source="bs4",
     )
 

@@ -9,6 +9,7 @@ dependencies = [
     "playwright>=1.40",
     "google-adk>=1.0.0",
     "requests>=2.31",
+    "trafilatura>=1.6",
 ]
 
 [dependency-groups]
