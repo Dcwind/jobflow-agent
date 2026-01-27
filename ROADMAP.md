@@ -13,13 +13,14 @@ An intelligent job application tracking platform that helps job seekers organize
 - [x] Vercel frontend deployment
 
 ## Next Up
-- [ ] **API Protection** — Next.js API proxy with server-side API key (block direct backend abuse)
+- [x] **API Protection** — Next.js API proxy with server-side API key (block direct backend abuse)
 
 ## Near-term (Post-MVP)
 - **User Authentication** — Better Auth (self-hosted, own your data)
   - Email/password + social OAuth
   - Session management
   - Multi-user data isolation
+- **PostgreSQL Migration** — Replace SQLite for multi-user support
 - **Fit Score Agent** — Compare jobs against user's CV/skills, rank opportunities
 - **Pattern Analysis** — Identify trends in applications (skills gaps, common requirements)
 
@@ -35,10 +36,12 @@ An intelligent job application tracking platform that helps job seekers organize
 - **AI Application Drafting** — Generate tailored cover letters and responses
 
 ## Technical Debt & Improvements
-- [ ] Fix: Handle jobLocation as array in JSON-LD extraction
-- [ ] Fix: Display job description in frontend (expandable row or modal)
+- [x] Fix: Handle jobLocation as array in JSON-LD extraction
+- [x] Fix: Display job description in frontend (expandable row)
+- [x] Fix: Table layout shifting when flagging jobs (overflow-hidden on container)
 - [ ] Add Alembic migrations for schema changes
 - [ ] Implement caching for repeated URL fetches
 - [ ] Add rate limiting per user (when auth is added)
 - [ ] Set up LangSmith/Langfuse for agent observability
 - [ ] Migrate from Nixpacks to Dockerfile ([plan](docs/dockerfile-migration.md))
+- [ ] Fix: Right padding disappears at <351px viewport width (CSS spec limitation)

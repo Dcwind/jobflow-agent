@@ -20,15 +20,34 @@ PII_PATTERNS = [
     (r"\b\+\d{1,3}[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b", "[PHONE]"),
     # LinkedIn profile URLs
     (r"linkedin\.com/in/[A-Za-z0-9_-]+/?", "[LINKEDIN]"),
-    # Names after common contact indicators (simplified pattern)
-    (
-        r"(?:contact|recruiter|hiring manager|reach out to|apply to|speak with|talk to)"
-        r"[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\b",
-        r"\1 [CONTACT_NAME]",
-    ),
     # Slack/Discord handles
     (r"@[A-Za-z0-9_]{3,}", "[HANDLE]"),
 ]
+
+# Patterns for contact section lines to remove entirely (data minimization)
+# These should be specific to recruiter/hiring contact sections, not general text
+CONTACT_LINE_PATTERNS = [
+    # "For questions, feel free to [Name]" or "For questions, contact [Name]" pattern
+    r"^(?:for\s+)?questions?,?\s+(?:please\s+)?(?:feel\s+free\s+to|contact|reach\s+out\s+to|email)\s+[A-Z][a-z]+.*$",
+    # "Contact: [Name]" or "Recruiter: [Name]" header pattern
+    r"^\s*(?:contact|recruiter|hiring\s+manager|point\s+of\s+contact)\s*:\s*[A-Z].*$",
+    # "Apply to [Name] at..." pattern
+    r"^(?:please\s+)?(?:apply|send\s+(?:your\s+)?(?:resume|cv|application))\s+to\s+[A-Z][a-z]+.*$",
+]
+
+
+def _remove_contact_lines(text: str) -> str:
+    """Remove entire lines that appear to be contact information sections."""
+    lines = text.splitlines()
+    filtered_lines = []
+    for line in lines:
+        is_contact_line = any(
+            re.match(pattern, line, flags=re.IGNORECASE)
+            for pattern in CONTACT_LINE_PATTERNS
+        )
+        if not is_contact_line:
+            filtered_lines.append(line)
+    return "\n".join(filtered_lines)
 
 
 def filter_pii(text: str | None) -> str | None:
@@ -44,6 +63,11 @@ def filter_pii(text: str | None) -> str | None:
         return text
 
     filtered = text
+
+    # Remove entire contact section lines first
+    filtered = _remove_contact_lines(filtered)
+
+    # Then redact any remaining PII patterns
     for pattern, replacement in PII_PATTERNS:
         filtered = re.sub(pattern, replacement, filtered, flags=re.IGNORECASE)
 

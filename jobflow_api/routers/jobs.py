@@ -10,6 +10,7 @@ from shared.db.session import get_db
 from sqlalchemy.orm import Session
 
 from jobflow_api.config import get_settings
+from jobflow_api.dependencies import verify_api_key
 from jobflow_api.schemas.job import (
     JobCreateRequest,
     JobCreateResponse,
@@ -24,7 +25,7 @@ from jobflow_api.services.scraper import scrape_multiple_jobs
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
-@router.post("", response_model=JobCreateResponse)
+@router.post("", response_model=JobCreateResponse, dependencies=[Depends(verify_api_key)])
 def create_jobs(
     request: JobCreateRequest,
     db: Session = Depends(get_db),
@@ -161,7 +162,7 @@ def get_job(
     return JobResponse.model_validate(job)
 
 
-@router.patch("/{job_id}", response_model=JobResponse)
+@router.patch("/{job_id}", response_model=JobResponse, dependencies=[Depends(verify_api_key)])
 def update_job(
     job_id: int,
     request: JobUpdateRequest,
@@ -181,7 +182,7 @@ def update_job(
     return JobResponse.model_validate(job)
 
 
-@router.patch("/{job_id}/flag", response_model=JobResponse)
+@router.patch("/{job_id}/flag", response_model=JobResponse, dependencies=[Depends(verify_api_key)])
 def flag_job(
     job_id: int,
     request: JobFlagRequest,
@@ -198,7 +199,7 @@ def flag_job(
     return JobResponse.model_validate(job)
 
 
-@router.delete("/{job_id}")
+@router.delete("/{job_id}", dependencies=[Depends(verify_api_key)])
 def delete_job(
     job_id: int,
     db: Session = Depends(get_db),

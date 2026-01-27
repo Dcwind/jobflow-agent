@@ -53,6 +53,46 @@ class TestBS4Extractor:
         assert "200,000" in result.salary
         assert "talented engineer" in result.description
 
+    def test_extract_location_array(self) -> None:
+        """Extract location from JSON-LD jobLocation array."""
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <script type="application/ld+json">
+            {
+                "@type": "JobPosting",
+                "title": "Remote Engineer",
+                "hiringOrganization": {"name": "MultiLoc Inc"},
+                "jobLocation": [
+                    {
+                        "@type": "Place",
+                        "address": {
+                            "addressLocality": "San Francisco",
+                            "addressRegion": "CA"
+                        }
+                    },
+                    {
+                        "@type": "Place",
+                        "address": {
+                            "addressLocality": "New York",
+                            "addressRegion": "NY"
+                        }
+                    }
+                ]
+            }
+            </script>
+        </head>
+        <body></body>
+        </html>
+        """
+        result = extract_with_bs4(html)
+
+        assert result.title == "Remote Engineer"
+        assert "San Francisco, CA" in result.location
+        assert "New York, NY" in result.location
+        assert "; " in result.location  # Locations joined with semicolon
+
     def test_extract_from_meta_tags(self) -> None:
         """Extract fields from meta tags when JSON-LD is absent."""
         html = """

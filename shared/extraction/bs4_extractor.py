@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import html
 import json
 import re
 from dataclasses import dataclass
 from typing import Any
 
+import trafilatura
 from bs4 import BeautifulSoup
 
 DEFAULT_TITLE = "Unknown Title"
@@ -118,22 +120,40 @@ def _extract_company(soup: BeautifulSoup, json_ld: dict | None) -> str:
     return DEFAULT_COMPANY
 
 
+def _location_from_place(place: dict) -> str | None:
+    """Extract location string from a Place object."""
+    address = place.get("address", {})
+    if isinstance(address, dict):
+        parts = [
+            address.get("addressLocality"),
+            address.get("addressRegion"),
+            address.get("addressCountry"),
+        ]
+        location = ", ".join(p for p in parts if p)
+        if location:
+            return location
+    return None
+
+
 def _extract_location(soup: BeautifulSoup, json_ld: dict | None) -> str | None:
     """Extract job location."""
     # Try JSON-LD jobLocation
     if json_ld:
         job_location = json_ld.get("jobLocation")
-        if isinstance(job_location, dict):
-            address = job_location.get("address", {})
-            if isinstance(address, dict):
-                parts = [
-                    address.get("addressLocality"),
-                    address.get("addressRegion"),
-                    address.get("addressCountry"),
-                ]
-                location = ", ".join(p for p in parts if p)
-                if location:
-                    return location
+        if isinstance(job_location, list):
+            # Handle array of Place objects
+            locations = []
+            for place in job_location:
+                if isinstance(place, dict):
+                    loc = _location_from_place(place)
+                    if loc:
+                        locations.append(loc)
+            if locations:
+                return "; ".join(locations)
+        elif isinstance(job_location, dict):
+            loc = _location_from_place(job_location)
+            if loc:
+                return loc
         elif isinstance(job_location, str):
             return job_location.strip()
 
@@ -198,18 +218,37 @@ def _extract_salary(soup: BeautifulSoup, json_ld: dict | None) -> str | None:
     return None
 
 
-def _extract_description(soup: BeautifulSoup, json_ld: dict | None) -> str | None:
-    """Extract job description."""
-    # Try JSON-LD description
-    if json_ld and json_ld.get("description"):
-        desc = str(json_ld["description"])
-        # Clean HTML if present in description
-        if "<" in desc:
-            desc_soup = BeautifulSoup(desc, "html.parser")
-            desc = desc_soup.get_text(separator="\n", strip=True)
-        return desc[:10000] if desc else None  # Limit size
+def _clean_description(text: str) -> str:
+    """Unescape HTML entities, strip tags, and clean up whitespace."""
+    # Unescape HTML entities (handles &lt;p&gt; etc.)
+    text = html.unescape(text)
+    # Strip HTML tags if present
+    if "<" in text:
+        soup = BeautifulSoup(text, "html.parser")
+        text = soup.get_text(separator="\n", strip=True)
+    # Clean up excessive whitespace while preserving paragraphs
+    lines = [line.strip() for line in text.splitlines()]
+    text = "\n".join(line for line in lines if line)
+    return text[:10000] if text else ""
 
-    # Try common description containers (in order of specificity)
+
+def _extract_description(
+    soup: BeautifulSoup, json_ld: dict | None, raw_html: str | None = None
+) -> str | None:
+    """Extract job description using multiple strategies.
+
+    Pipeline:
+    1. JSON-LD structured data (most reliable)
+    2. CSS selectors for common job description containers
+    3. Trafilatura content extraction (works on any page structure)
+    """
+    # Strategy 1: Try JSON-LD description
+    if json_ld and json_ld.get("description"):
+        desc = _clean_description(str(json_ld["description"]))
+        if desc:
+            return desc
+
+    # Strategy 2: Try common description containers (in order of specificity)
     selectors = [
         "[class*='job-description']",
         "[class*='jobDescription']",
@@ -223,15 +262,21 @@ def _extract_description(soup: BeautifulSoup, json_ld: dict | None) -> str | Non
     for selector in selectors:
         node = soup.select_one(selector)
         if node:
-            text = node.get_text(separator="\n", strip=True)
+            text = _clean_description(node.get_text(separator="\n", strip=True))
             if len(text) > 200:  # Meaningful description length
-                return text[:10000]
+                return text
+
+    # Strategy 3: Use trafilatura for automatic content extraction
+    if raw_html:
+        extracted = trafilatura.extract(raw_html, include_comments=False, include_tables=False)
+        if extracted and len(extracted) > 200:
+            return _clean_description(extracted)
 
     return None
 
 
 def extract_with_bs4(html: str) -> ExtractionResult:
-    """Extract job fields using BeautifulSoup and JSON-LD."""
+    """Extract job fields using BeautifulSoup, JSON-LD, and trafilatura."""
     soup = BeautifulSoup(html or "", "html.parser")
     json_ld = _parse_json_ld(soup)
 
@@ -240,7 +285,7 @@ def extract_with_bs4(html: str) -> ExtractionResult:
         company=_extract_company(soup, json_ld),
         location=_extract_location(soup, json_ld),
         salary=_extract_salary(soup, json_ld),
-        description=_extract_description(soup, json_ld),
+        description=_extract_description(soup, json_ld, html),
         source="bs4",
     )
 

@@ -123,3 +123,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fix for right padding disappearing in horizontal scroll containers */
+.scroll-padding-fix::after {
+  content: '';
+  display: block;
+  min-width: 1rem;
+  height: 1px;
+}

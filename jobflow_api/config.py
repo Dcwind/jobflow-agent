@@ -24,6 +24,9 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v
 
+    # API key for proxy authentication
+    api_key: str | None = None
+
     # Rate limiting
     rate_limit_per_minute: int = 30
 

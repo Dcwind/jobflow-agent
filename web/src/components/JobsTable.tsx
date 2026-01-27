@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import {
   Table,
   TableBody,
@@ -28,6 +28,7 @@ interface EditingState {
 export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [loading, setLoading] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const handleEdit = (
     job: Job,
@@ -125,7 +126,7 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto scroll-padding-fix">
       <Table>
         <TableHeader>
           <TableRow>
@@ -140,56 +141,78 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
         </TableHeader>
         <TableBody>
           {jobs.map((job) => (
-            <TableRow key={job.id} className={job.flagged ? "bg-yellow-50" : ""}>
-              <TableCell className="font-medium">
-                {renderCell(job, "title")}
-              </TableCell>
-              <TableCell>{renderCell(job, "company")}</TableCell>
-              <TableCell>{renderCell(job, "location")}</TableCell>
-              <TableCell>{renderCell(job, "salary")}</TableCell>
-              <TableCell>
-                <Badge variant="outline" className="text-xs">
-                  {job.extraction_method || "unknown"}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {job.flagged && (
-                  <Badge variant="destructive" className="text-xs">
-                    Flagged
+            <Fragment key={job.id}>
+              <TableRow className={job.flagged ? "bg-yellow-50" : ""}>
+                <TableCell className="font-medium">
+                  {renderCell(job, "title")}
+                </TableCell>
+                <TableCell>{renderCell(job, "company")}</TableCell>
+                <TableCell>{renderCell(job, "location")}</TableCell>
+                <TableCell>{renderCell(job, "salary")}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-xs">
+                    {job.extraction_method || "unknown"}
                   </Badge>
-                )}
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleFlag(job)}
-                    disabled={loading === job.id}
-                    title={job.flagged ? "Unflag" : "Flag for review"}
-                  >
-                    {job.flagged ? "Unflag" : "Flag"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-red-600 hover:text-red-700"
-                    onClick={() => handleDelete(job)}
-                    disabled={loading === job.id}
-                  >
-                    Delete
-                  </Button>
-                  <a
-                    href={job.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline text-sm px-2 py-1"
-                  >
-                    View
-                  </a>
-                </div>
-              </TableCell>
-            </TableRow>
+                </TableCell>
+                <TableCell>
+                  {job.flagged && (
+                    <Badge variant="destructive" className="text-xs">
+                      Flagged
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1 flex-nowrap items-center">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="min-w-[70px]"
+                      onClick={() => setExpandedId(expandedId === job.id ? null : job.id)}
+                      disabled={!job.description}
+                    >
+                      {expandedId === job.id ? "Hide" : "Details"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="min-w-[70px]"
+                      onClick={() => handleFlag(job)}
+                      disabled={loading === job.id}
+                      title={job.flagged ? "Unflag" : "Flag for review"}
+                    >
+                      {job.flagged ? "Unflag" : "Flag"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleDelete(job)}
+                      disabled={loading === job.id}
+                    >
+                      Delete
+                    </Button>
+                    <Button size="sm" variant="outline" asChild>
+                      <a
+                        href={job.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View
+                      </a>
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+              {expandedId === job.id && job.description && (
+                <TableRow className="bg-gray-50">
+                  <TableCell colSpan={7} className="py-4">
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-64 overflow-y-auto">
+                      {job.description}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </Fragment>
           ))}
         </TableBody>
       </Table>
