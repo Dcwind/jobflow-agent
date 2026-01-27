@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import json
 import re
 from dataclasses import dataclass
@@ -216,16 +217,26 @@ def _extract_salary(soup: BeautifulSoup, json_ld: dict | None) -> str | None:
     return None
 
 
+def _clean_description(text: str) -> str:
+    """Unescape HTML entities, strip tags, and clean up whitespace."""
+    # Unescape HTML entities (handles &lt;p&gt; etc.)
+    text = html.unescape(text)
+    # Strip HTML tags if present
+    if "<" in text:
+        soup = BeautifulSoup(text, "html.parser")
+        text = soup.get_text(separator="\n", strip=True)
+    # Clean up excessive whitespace while preserving paragraphs
+    lines = [line.strip() for line in text.splitlines()]
+    text = "\n".join(line for line in lines if line)
+    return text[:10000] if text else ""
+
+
 def _extract_description(soup: BeautifulSoup, json_ld: dict | None) -> str | None:
     """Extract job description."""
     # Try JSON-LD description
     if json_ld and json_ld.get("description"):
-        desc = str(json_ld["description"])
-        # Clean HTML if present in description
-        if "<" in desc:
-            desc_soup = BeautifulSoup(desc, "html.parser")
-            desc = desc_soup.get_text(separator="\n", strip=True)
-        return desc[:10000] if desc else None  # Limit size
+        desc = _clean_description(str(json_ld["description"]))
+        return desc if desc else None
 
     # Try common description containers (in order of specificity)
     selectors = [
@@ -241,9 +252,9 @@ def _extract_description(soup: BeautifulSoup, json_ld: dict | None) -> str | Non
     for selector in selectors:
         node = soup.select_one(selector)
         if node:
-            text = node.get_text(separator="\n", strip=True)
+            text = _clean_description(node.get_text(separator="\n", strip=True))
             if len(text) > 200:  # Meaningful description length
-                return text[:10000]
+                return text
 
     return None
 

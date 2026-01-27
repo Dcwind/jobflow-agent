@@ -175,6 +175,7 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
                     <Button
                       size="sm"
                       variant="outline"
+                      className="min-w-[70px]"
                       onClick={() => handleFlag(job)}
                       disabled={loading === job.id}
                       title={job.flagged ? "Unflag" : "Flag for review"}
