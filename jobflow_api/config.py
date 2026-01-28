@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     use_playwright: bool = True
     use_llm_fallback: bool = True
     use_llm_validation: bool = False  # Disabled by default to reduce API costs
+    check_robots: bool = True  # Check robots.txt before scraping (enterprise compliance)
 
     model_config = {
         "env_file": ".env",

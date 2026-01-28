@@ -22,6 +22,7 @@ def scrape_and_store_job(
     use_playwright: bool = True,
     use_llm_fallback: bool = True,
     use_llm_validation: bool = False,
+    check_robots: bool = True,
 ) -> tuple[Job | None, str | None]:
     """Scrape a job URL and store in database.
 
@@ -31,6 +32,7 @@ def scrape_and_store_job(
         use_playwright: Enable Playwright fallback
         use_llm_fallback: Enable LLM extraction fallback
         use_llm_validation: Enable LLM validation
+        check_robots: Check robots.txt before scraping
 
     Returns:
         Tuple of (Job instance or None, error message or None)
@@ -51,6 +53,7 @@ def scrape_and_store_job(
             use_playwright=use_playwright,
             use_llm_fallback=use_llm_fallback,
             use_llm_validation=use_llm_validation,
+            check_robots=check_robots,
         )
     except Exception as e:
         LOGGER.error("Extraction failed for %s: %s", url_str, e)
@@ -96,6 +99,7 @@ def scrape_multiple_jobs(
     use_playwright: bool = True,
     use_llm_fallback: bool = True,
     use_llm_validation: bool = False,
+    check_robots: bool = True,
 ) -> list[tuple[str, Job | None, str | None]]:
     """Scrape multiple job URLs.
 
@@ -105,6 +109,7 @@ def scrape_multiple_jobs(
         use_playwright: Enable Playwright fallback
         use_llm_fallback: Enable LLM extraction fallback
         use_llm_validation: Enable LLM validation
+        check_robots: Check robots.txt before scraping
 
     Returns:
         List of (url, job or None, error or None) tuples
@@ -118,6 +123,7 @@ def scrape_multiple_jobs(
             use_playwright=use_playwright,
             use_llm_fallback=use_llm_fallback,
             use_llm_validation=use_llm_validation,
+            check_robots=check_robots,
         )
         results.append((url_str, job, error))
     return results

@@ -38,6 +38,7 @@ def create_jobs(
         use_playwright=settings.use_playwright,
         use_llm_fallback=settings.use_llm_fallback,
         use_llm_validation=settings.use_llm_validation,
+        check_robots=settings.check_robots,
     )
 
     create_results = []
