@@ -11,11 +11,17 @@ An intelligent job application tracking platform that helps job seekers organize
 - [x] Next.js frontend with job table
 - [x] Railway backend deployment
 - [x] Vercel frontend deployment
+- [x] Robots.txt compliance checking (enterprise-grade scraping)
 
 ## Next Up
 - [x] **API Protection** — Next.js API proxy with server-side API key (block direct backend abuse)
 
 ## Near-term (Post-MVP)
+- **Manual Job Entry** — For sites that block scraping (LinkedIn, etc.)
+  - User enters title, company, location, salary, description manually
+  - PII filtering still applied to pasted content
+  - URL optional/hidden for blocked domains (legal safety)
+  - Marked as `extraction_method: "manual"`
 - **User Authentication** — Better Auth (self-hosted, own your data)
   - Email/password + social OAuth
   - Session management
