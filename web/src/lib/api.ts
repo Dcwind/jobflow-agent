@@ -49,6 +49,22 @@ export interface JobUpdate {
   description?: string;
 }
 
+export interface ManualJobInput {
+  title: string;
+  company: string;
+  location?: string;
+  salary?: string;
+  description?: string;
+  url?: string;
+}
+
+export interface ParsedJobFields {
+  title: string | null;
+  company: string | null;
+  location: string | null;
+  salary: string | null;
+}
+
 class ApiError extends Error {
   constructor(
     public status: number,
@@ -74,6 +90,24 @@ export async function createJobs(urls: string[]): Promise<JobCreateResponse> {
     body: JSON.stringify({ urls }),
   });
   return handleResponse<JobCreateResponse>(response);
+}
+
+export async function createJobManual(job: ManualJobInput): Promise<Job> {
+  const response = await fetch(`${API_BASE}/api/jobs/manual`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(job),
+  });
+  return handleResponse<Job>(response);
+}
+
+export async function parseJobDescription(text: string): Promise<ParsedJobFields> {
+  const response = await fetch(`${API_BASE}/api/jobs/parse`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  return handleResponse<ParsedJobFields>(response);
 }
 
 export async function listJobs(

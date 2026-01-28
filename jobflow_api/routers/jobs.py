@@ -17,10 +17,17 @@ from jobflow_api.schemas.job import (
     JobCreateResult,
     JobFlagRequest,
     JobListResponse,
+    JobManualCreateRequest,
+    JobParseRequest,
+    JobParseResponse,
     JobResponse,
     JobUpdateRequest,
 )
-from jobflow_api.services.scraper import scrape_multiple_jobs
+from jobflow_api.services.scraper import (
+    create_manual_job,
+    parse_job_from_text,
+    scrape_multiple_jobs,
+)
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -67,6 +74,36 @@ def create_jobs(
         succeeded=succeeded,
         failed=len(create_results) - succeeded,
     )
+
+
+@router.post("/manual", response_model=JobResponse, dependencies=[Depends(verify_api_key)])
+def create_job_manual(
+    request: JobManualCreateRequest,
+    db: Session = Depends(get_db),
+) -> JobResponse:
+    """Create a job from manual entry (for sites that block scraping)."""
+    job, error = create_manual_job(
+        db,
+        title=request.title,
+        company=request.company,
+        location=request.location,
+        salary=request.salary,
+        description=request.description,
+        url=request.url,
+    )
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return JobResponse.model_validate(job)
+
+
+@router.post("/parse", response_model=JobParseResponse, dependencies=[Depends(verify_api_key)])
+def parse_job_description(request: JobParseRequest) -> JobParseResponse:
+    """Extract job fields from description text using LLM."""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text is required")
+
+    fields = parse_job_from_text(request.text)
+    return JobParseResponse(**fields)
 
 
 @router.get("", response_model=JobListResponse)

@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from typing import TYPE_CHECKING
 
 from shared.db.models import Job
 from shared.extraction import extract_job
+from shared.extraction.pii_filter import filter_pii
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -127,3 +129,136 @@ def scrape_multiple_jobs(
         )
         results.append((url_str, job, error))
     return results
+
+
+def parse_job_from_text(text: str) -> dict[str, str | None]:
+    """Extract job fields from description text using LLM.
+
+    Args:
+        text: Job description text
+
+    Returns:
+        Dict with extracted title, company, location, salary (any can be None)
+    """
+    import json
+    import os
+
+    LOGGER.info("Parsing job fields from text (%d chars)", len(text))
+
+    # Try LLM extraction
+    try:
+        from google import genai
+
+        api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            LOGGER.warning("No API key for LLM parsing")
+            return {"title": None, "company": None, "location": None, "salary": None}
+
+        client = genai.Client(api_key=api_key)
+
+        prompt = f"""Extract job posting fields from this text. Return ONLY a JSON object with these keys:
+- title: The job title (string or null)
+- company: The company name (string or null)
+- location: The job location (string or null)
+- salary: The salary/compensation if mentioned (string or null)
+
+Text:
+{text[:8000]}
+
+JSON:"""
+
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+        )
+
+        response_text = response.text.strip()
+        # Handle markdown code blocks
+        if response_text.startswith("```"):
+            lines = response_text.split("\n")
+            json_lines = []
+            in_json = False
+            for line in lines:
+                if line.startswith("```json") or line.startswith("```"):
+                    in_json = not in_json if line == "```" else True
+                    continue
+                if in_json:
+                    json_lines.append(line)
+            response_text = "\n".join(json_lines)
+
+        data = json.loads(response_text)
+        LOGGER.info("Parsed fields: %s", data)
+        return {
+            "title": data.get("title"),
+            "company": data.get("company"),
+            "location": data.get("location"),
+            "salary": data.get("salary"),
+        }
+
+    except Exception as e:
+        LOGGER.warning("LLM parsing failed: %s", e)
+        return {"title": None, "company": None, "location": None, "salary": None}
+
+
+def create_manual_job(
+    db: Session,
+    title: str,
+    company: str,
+    location: str | None = None,
+    salary: str | None = None,
+    description: str | None = None,
+    url: str | None = None,
+) -> tuple[Job | None, str | None]:
+    """Create a job from manual entry (no scraping).
+
+    Args:
+        db: Database session
+        title: Job title
+        company: Company name
+        location: Job location (optional)
+        salary: Salary info (optional)
+        description: Job description (optional, PII will be filtered)
+        url: Source URL (optional, placeholder generated if omitted)
+
+    Returns:
+        Tuple of (Job instance or None, error message or None)
+    """
+    # Generate placeholder URL if none provided
+    if not url:
+        url = f"manual://{uuid.uuid4().hex[:12]}"
+
+    LOGGER.info("Creating manual job: %s at %s", title, company)
+
+    # Check for duplicate URL
+    existing = db.query(Job).filter(Job.url == url).first()
+    if existing:
+        LOGGER.info("Job with URL already exists: %s", url)
+        return None, "Job with this URL already exists"
+
+    # Apply PII filter to description
+    if description:
+        description = filter_pii(description)
+
+    job = Job(
+        url=url,
+        title=title,
+        company=company,
+        location=location,
+        salary=salary,
+        description=description,
+        extraction_method="manual",
+    )
+
+    try:
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        LOGGER.info("Manual job stored: id=%d, title=%s", job.id, job.title)
+        return job, None
+    except IntegrityError:
+        db.rollback()
+        return None, "Job with this URL already exists"
+    except Exception as e:
+        db.rollback()
+        LOGGER.error("Failed to store manual job: %s", e)
+        return None, f"Database error: {e}"
