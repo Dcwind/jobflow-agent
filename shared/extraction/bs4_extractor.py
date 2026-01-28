@@ -88,17 +88,32 @@ def _extract_title(soup: BeautifulSoup, json_ld: dict | None) -> str:
     return DEFAULT_TITLE
 
 
-def _extract_company(soup: BeautifulSoup, json_ld: dict | None) -> str:
-    """Extract company name."""
-    # Try JSON-LD hiringOrganization
+def _extract_company(soup: BeautifulSoup, json_ld: dict | None, url: str | None = None) -> str:
+    """Extract company name with multiple fallback strategies."""
+    from shared.extraction.domain_cache import (
+        cache_company,
+        company_from_domain,
+        get_cached_company,
+        get_domain,
+    )
+
+    domain = get_domain(url) if url else None
+
+    # Strategy 1: JSON-LD hiringOrganization
     if json_ld:
         hiring_org = json_ld.get("hiringOrganization")
         if isinstance(hiring_org, dict) and hiring_org.get("name"):
-            return str(hiring_org["name"]).strip()
+            company = str(hiring_org["name"]).strip()
+            if domain:
+                cache_company(domain, company)
+            return company
         if isinstance(hiring_org, str):
-            return hiring_org.strip()
+            company = hiring_org.strip()
+            if domain:
+                cache_company(domain, company)
+            return company
 
-    # Try common meta tags
+    # Strategy 2: Common meta tags
     meta_keys = [
         ("meta", {"property": "og:site_name"}),
         ("meta", {"name": "company"}),
@@ -110,12 +125,28 @@ def _extract_company(soup: BeautifulSoup, json_ld: dict | None) -> str:
         if node and node.get("content"):
             content = node["content"].strip()
             if content and content != "@":  # Skip Twitter handles
+                if domain:
+                    cache_company(domain, content)
                 return content
 
-    # Try data-company attribute
+    # Strategy 3: data-company attribute
     company_tag = soup.find(attrs={"data-company": True})
     if company_tag:
-        return str(company_tag.get("data-company")).strip()
+        company = str(company_tag.get("data-company")).strip()
+        if domain:
+            cache_company(domain, company)
+        return company
+
+    # Strategy 4: Domain cache lookup
+    if domain:
+        cached = get_cached_company(domain)
+        if cached:
+            return cached
+
+        # Strategy 5: Derive from domain name
+        derived = company_from_domain(domain)
+        if derived != "Unknown":
+            return derived
 
     return DEFAULT_COMPANY
 
@@ -135,9 +166,9 @@ def _location_from_place(place: dict) -> str | None:
     return None
 
 
-def _extract_location(soup: BeautifulSoup, json_ld: dict | None) -> str | None:
-    """Extract job location."""
-    # Try JSON-LD jobLocation
+def _extract_location(soup: BeautifulSoup, json_ld: dict | None, title: str | None = None) -> str | None:
+    """Extract job location with multiple fallback strategies."""
+    # Strategy 1: JSON-LD jobLocation
     if json_ld:
         job_location = json_ld.get("jobLocation")
         if isinstance(job_location, list):
@@ -157,7 +188,7 @@ def _extract_location(soup: BeautifulSoup, json_ld: dict | None) -> str | None:
         elif isinstance(job_location, str):
             return job_location.strip()
 
-    # Try common class patterns
+    # Strategy 2: Common class patterns
     location_patterns = ["location", "job-location", "jobLocation", "job_location"]
     for pattern in location_patterns:
         node = soup.find(attrs={"class": re.compile(pattern, re.I)})
@@ -166,11 +197,19 @@ def _extract_location(soup: BeautifulSoup, json_ld: dict | None) -> str | None:
             if text and len(text) < 200:  # Reasonable length
                 return text
 
-    # Try meta tags
+    # Strategy 3: Meta tags
     for attr in [{"name": "location"}, {"property": "place:location"}]:
         node = soup.find("meta", attrs=attr)
         if node and node.get("content"):
             return node["content"].strip()
+
+    # Strategy 4: Geotext extraction from title
+    if title:
+        from shared.extraction.geo_extractor import extract_location_from_title
+
+        loc = extract_location_from_title(title)
+        if loc:
+            return loc
 
     return None
 
@@ -275,15 +314,16 @@ def _extract_description(
     return None
 
 
-def extract_with_bs4(html: str) -> ExtractionResult:
-    """Extract job fields using BeautifulSoup, JSON-LD, and trafilatura."""
+def extract_with_bs4(html: str, url: str | None = None) -> ExtractionResult:
+    """Extract job fields using BeautifulSoup, JSON-LD, and heuristics."""
     soup = BeautifulSoup(html or "", "html.parser")
     json_ld = _parse_json_ld(soup)
+    title = _extract_title(soup, json_ld)
 
     return ExtractionResult(
-        title=_extract_title(soup, json_ld),
-        company=_extract_company(soup, json_ld),
-        location=_extract_location(soup, json_ld),
+        title=title,
+        company=_extract_company(soup, json_ld, url),
+        location=_extract_location(soup, json_ld, title),
         salary=_extract_salary(soup, json_ld),
         description=_extract_description(soup, json_ld, html),
         source="bs4",

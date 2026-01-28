@@ -411,6 +411,15 @@ wheels = [
 ]
 
 [[package]]
+name = "geotext"
+version = "0.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6d/3e/25ecf87381f0f042a528714fa0a12987d8d5842e35b2ceb212c2119aa877/geotext-0.4.0.tar.gz", hash = "sha256:0ba5aa03db8246a8f77f9a334e79bc1f5875b38fd63589f0be4c83c1d94c52fd", size = 1962453, upload-time = "2018-07-30T12:15:01.658Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/25/c5/36351193092cb4c1d7002d2a3babe5e72ae377868473933d6f63b41e5454/geotext-0.4.0-py2.py3-none-any.whl", hash = "sha256:afc17c170337195b0fc9990ff2dec822bb4eb548c0541f5b7c853ff06ae164dc", size = 1961851, upload-time = "2018-07-30T12:14:44.655Z" },
+]
+
+[[package]]
 name = "google-adk"
 version = "1.22.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1197,6 +1206,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
+    { name = "geotext" },
     { name = "google-adk" },
     { name = "playwright" },
     { name = "requests" },
@@ -1214,6 +1224,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.12" },
+    { name = "geotext", specifier = ">=0.4" },
     { name = "google-adk", specifier = ">=1.0.0" },
     { name = "playwright", specifier = ">=1.40" },
     { name = "requests", specifier = ">=2.31" },

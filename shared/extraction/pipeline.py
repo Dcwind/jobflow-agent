@@ -157,7 +157,7 @@ def extract_job(
     # Step 2: Extract with BS4
     result: ExtractionResult | None = None
     if html:
-        result = extract_with_bs4(html)
+        result = extract_with_bs4(html, url)
         LOGGER.info("BS4 extraction: title=%s, company=%s", result.title, result.company)
 
         # Check if extraction is complete
@@ -175,7 +175,7 @@ def extract_job(
         if playwright_html:
             metrics.fetch_method = "playwright"
             html = playwright_html
-            result = extract_with_bs4(html)
+            result = extract_with_bs4(html, url)
             LOGGER.info("Playwright + BS4: title=%s, company=%s", result.title, result.company)
 
             if result.is_complete():
