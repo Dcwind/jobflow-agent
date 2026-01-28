@@ -1,5 +1,10 @@
 """FastAPI application entry point."""
 
+# Load .env into os.environ before any other imports
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import logging
 import uuid
 from contextlib import asynccontextmanager

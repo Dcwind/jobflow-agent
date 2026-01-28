@@ -8,6 +8,7 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
+    "python-dotenv>=1.0",
     "python-multipart>=0.0.12",
     "slowapi>=0.1.9",
     "jobflow-shared",
@@ -37,4 +38,4 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["E501", "B008"]  # B008: Depends() in defaults is standard FastAPI pattern
+ignore = ["E501", "B008", "E402"]  # B008: Depends() in defaults, E402: load_dotenv before imports

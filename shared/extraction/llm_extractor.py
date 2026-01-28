@@ -37,16 +37,15 @@ JSON Response:"""
 def _get_genai_client() -> Any:
     """Get the Google Generative AI client."""
     try:
-        import google.generativeai as genai
+        from google import genai
 
-        api_key = os.environ.get("GOOGLE_API_KEY")
+        api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
         if not api_key:
-            raise ValueError("GOOGLE_API_KEY environment variable not set")
+            raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set")
 
-        genai.configure(api_key=api_key)
-        return genai
+        return genai.Client(api_key=api_key)
     except ImportError as e:
-        raise ImportError("google-generativeai package not installed") from e
+        raise ImportError("google-genai package not installed") from e
 
 
 def extract_with_llm(html: str, model_name: str = "gemini-1.5-flash") -> ExtractionResult:
@@ -69,11 +68,10 @@ def extract_with_llm(html: str, model_name: str = "gemini-1.5-flash") -> Extract
         html = html[:max_html_len]
 
     try:
-        genai = _get_genai_client()
-        model = genai.GenerativeModel(model_name)
+        client = _get_genai_client()
 
         prompt = EXTRACTION_PROMPT.format(html=html)
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(model=model_name, contents=prompt)
 
         # Extract JSON from response
         response_text = response.text.strip()
