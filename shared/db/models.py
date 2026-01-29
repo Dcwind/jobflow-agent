@@ -19,6 +19,7 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     url: Mapped[str] = mapped_column(String(2048), nullable=False, unique=True)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     company: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -42,6 +43,7 @@ class Job(Base):
         """Convert to dictionary for API responses."""
         return {
             "id": self.id,
+            "user_id": self.user_id,
             "url": self.url,
             "title": self.title,
             "company": self.company,

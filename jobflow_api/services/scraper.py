@@ -21,6 +21,7 @@ LOGGER = logging.getLogger(__name__)
 def scrape_and_store_job(
     db: Session,
     url: str,
+    user_id: str,
     use_playwright: bool = True,
     use_llm_fallback: bool = True,
     use_llm_validation: bool = False,
@@ -31,6 +32,7 @@ def scrape_and_store_job(
     Args:
         db: Database session
         url: Job posting URL
+        user_id: Owner user ID
         use_playwright: Enable Playwright fallback
         use_llm_fallback: Enable LLM extraction fallback
         use_llm_validation: Enable LLM validation
@@ -68,6 +70,7 @@ def scrape_and_store_job(
     # Create job record
     job = Job(
         url=url_str,
+        user_id=user_id,
         title=result.title,
         company=result.company,
         location=result.location,
@@ -98,6 +101,7 @@ def scrape_and_store_job(
 def scrape_multiple_jobs(
     db: Session,
     urls: list[HttpUrl],
+    user_id: str,
     use_playwright: bool = True,
     use_llm_fallback: bool = True,
     use_llm_validation: bool = False,
@@ -108,6 +112,7 @@ def scrape_multiple_jobs(
     Args:
         db: Database session
         urls: List of job URLs
+        user_id: Owner user ID
         use_playwright: Enable Playwright fallback
         use_llm_fallback: Enable LLM extraction fallback
         use_llm_validation: Enable LLM validation
@@ -122,6 +127,7 @@ def scrape_multiple_jobs(
         job, error = scrape_and_store_job(
             db,
             url_str,
+            user_id,
             use_playwright=use_playwright,
             use_llm_fallback=use_llm_fallback,
             use_llm_validation=use_llm_validation,
@@ -204,6 +210,7 @@ def create_manual_job(
     db: Session,
     title: str,
     company: str,
+    user_id: str,
     location: str | None = None,
     salary: str | None = None,
     description: str | None = None,
@@ -215,6 +222,7 @@ def create_manual_job(
         db: Database session
         title: Job title
         company: Company name
+        user_id: Owner user ID
         location: Job location (optional)
         salary: Salary info (optional)
         description: Job description (optional, PII will be filtered)
@@ -241,6 +249,7 @@ def create_manual_job(
 
     job = Job(
         url=url,
+        user_id=user_id,
         title=title,
         company=company,
         location=location,

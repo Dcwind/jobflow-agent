@@ -10,7 +10,7 @@ from shared.db.session import get_db
 from sqlalchemy.orm import Session
 
 from jobflow_api.config import get_settings
-from jobflow_api.dependencies import verify_api_key
+from jobflow_api.dependencies import UserInfo, require_auth, verify_api_key
 from jobflow_api.schemas.job import (
     JobCreateRequest,
     JobCreateResponse,
@@ -35,6 +35,7 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 @router.post("", response_model=JobCreateResponse, dependencies=[Depends(verify_api_key)])
 def create_jobs(
     request: JobCreateRequest,
+    user: UserInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ) -> JobCreateResponse:
     """Scrape and store jobs from URLs."""
@@ -42,6 +43,7 @@ def create_jobs(
     results = scrape_multiple_jobs(
         db,
         request.urls,
+        user["id"],
         use_playwright=settings.use_playwright,
         use_llm_fallback=settings.use_llm_fallback,
         use_llm_validation=settings.use_llm_validation,
@@ -79,13 +81,15 @@ def create_jobs(
 @router.post("/manual", response_model=JobResponse, dependencies=[Depends(verify_api_key)])
 def create_job_manual(
     request: JobManualCreateRequest,
+    user: UserInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ) -> JobResponse:
     """Create a job from manual entry (for sites that block scraping)."""
     job, error = create_manual_job(
         db,
-        title=request.title,
-        company=request.company,
+        request.title,
+        request.company,
+        user["id"],
         location=request.location,
         salary=request.salary,
         description=request.description,
@@ -112,6 +116,7 @@ def list_jobs(
     per_page: int = 20,
     company: str | None = None,
     flagged: bool | None = None,
+    user: UserInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ) -> JobListResponse:
     """List jobs with pagination and filtering."""
@@ -120,7 +125,7 @@ def list_jobs(
     if per_page < 1 or per_page > 100:
         per_page = 20
 
-    query = db.query(Job)
+    query = db.query(Job).filter(Job.user_id == user["id"])
 
     # Apply filters
     if company:
@@ -148,10 +153,11 @@ def list_jobs(
 def export_jobs(
     company: str | None = None,
     flagged: bool | None = None,
+    user: UserInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ) -> Response:
     """Export jobs as CSV."""
-    query = db.query(Job)
+    query = db.query(Job).filter(Job.user_id == user["id"])
 
     if company:
         query = query.filter(Job.company.ilike(f"%{company}%"))
@@ -191,10 +197,11 @@ def export_jobs(
 @router.get("/{job_id}", response_model=JobResponse)
 def get_job(
     job_id: int,
+    user: UserInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ) -> JobResponse:
     """Get a single job by ID."""
-    job = db.query(Job).filter(Job.id == job_id).first()
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == user["id"]).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return JobResponse.model_validate(job)
@@ -204,10 +211,11 @@ def get_job(
 def update_job(
     job_id: int,
     request: JobUpdateRequest,
+    user: UserInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ) -> JobResponse:
     """Update job fields (for user corrections)."""
-    job = db.query(Job).filter(Job.id == job_id).first()
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == user["id"]).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -224,10 +232,11 @@ def update_job(
 def flag_job(
     job_id: int,
     request: JobFlagRequest,
+    user: UserInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ) -> JobResponse:
     """Flag or unflag a job for review."""
-    job = db.query(Job).filter(Job.id == job_id).first()
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == user["id"]).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -240,10 +249,11 @@ def flag_job(
 @router.delete("/{job_id}", dependencies=[Depends(verify_api_key)])
 def delete_job(
     job_id: int,
+    user: UserInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ) -> dict:
     """Delete a job."""
-    job = db.query(Job).filter(Job.id == job_id).first()
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == user["id"]).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
