@@ -11,7 +11,11 @@ from shared.db.session import get_db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from jobflow_api.dependencies import require_auth
 from jobflow_api.main import app
+
+# Test user for mocking authentication
+TEST_USER = {"id": "test-user-123", "email": "test@example.com", "name": "Test User"}
 
 
 @pytest.fixture
@@ -30,7 +34,11 @@ def test_db():
             finally:
                 db.close()
 
+        def override_require_auth():
+            return TEST_USER
+
         app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[require_auth] = override_require_auth
         yield TestingSessionLocal
         app.dependency_overrides.clear()
 
@@ -47,6 +55,7 @@ def sample_job(test_db):
     db = test_db()
     job = Job(
         url="https://example.com/job/123",
+        user_id=TEST_USER["id"],
         title="Software Engineer",
         company="ACME Corp",
         location="San Francisco, CA",
@@ -102,7 +111,12 @@ class TestJobsListEndpoint:
         # Create 5 jobs
         db = test_db()
         for i in range(5):
-            job = Job(url=f"https://example.com/job/{i}", title=f"Job {i}", company="ACME")
+            job = Job(
+                url=f"https://example.com/job/{i}",
+                user_id=TEST_USER["id"],
+                title=f"Job {i}",
+                company="ACME",
+            )
             db.add(job)
         db.commit()
         db.close()
