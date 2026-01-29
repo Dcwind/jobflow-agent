@@ -16,12 +16,12 @@ An intelligent job application tracking platform that helps job seekers organize
 ## Next Up
 - [x] **API Protection** — Next.js API proxy with server-side API key (block direct backend abuse)
 - [x] **Manual Job Entry** — For sites that block scraping (LinkedIn, etc.)
-- [ ] **User Authentication** — Better Auth (self-hosted, own your data)
+- [x] **User Authentication** — Better Auth (self-hosted, own your data)
   - [x] OAuth sign-in (Google, GitHub)
   - [x] Session management + sign-in page
   - [x] Backend data isolation (user_id on jobs, require auth)
-  - [ ] Frontend token forwarding (Next.js proxy → backend)
-  - [ ] Protected routes (redirect unauthenticated users to /signin)
+  - [x] Frontend token forwarding (Next.js proxy → backend)
+  - [x] Protected routes (redirect unauthenticated users to /signin)
 
 ## Near-term (Post-MVP)
 - **Magic Links** — Passwordless email sign-in
