@@ -31,7 +31,7 @@ export function UserMenu() {
       <Button
         variant="outline"
         size="sm"
-        onClick={() => signOut()}
+        onClick={() => signOut({ fetchOptions: { onSuccess: () => { window.location.href = "/signin"; } } })}
       >
         Sign out
       </Button>
