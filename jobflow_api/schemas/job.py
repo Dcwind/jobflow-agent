@@ -45,6 +45,7 @@ class JobUpdateRequest(BaseModel):
     location: str | None = None
     salary: str | None = None
     description: str | None = None
+    stage: str | None = None
 
 
 class JobFlagRequest(BaseModel):
@@ -64,6 +65,7 @@ class JobResponse(BaseModel):
     salary: str | None
     description: str | None
     extraction_method: str | None
+    stage: str
     flagged: bool
     created_at: datetime
     updated_at: datetime | None

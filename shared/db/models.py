@@ -27,6 +27,7 @@ class Job(Base):
     salary: Mapped[str | None] = mapped_column(String(100), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     extraction_method: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    stage: Mapped[str] = mapped_column(String(20), default="Backlog", nullable=False)
     flagged: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime | None] = mapped_column(
@@ -51,6 +52,7 @@ class Job(Base):
             "salary": self.salary,
             "description": self.description,
             "extraction_method": self.extraction_method,
+            "stage": self.stage,
             "flagged": bool(self.flagged),
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

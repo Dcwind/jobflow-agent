@@ -262,3 +262,40 @@ class TestJobsCreateEndpoint:
             assert data["succeeded"] == 1
             assert data["failed"] == 0
             assert data["results"][0]["job"]["title"] == "Backend Developer"
+
+
+class TestJobsStageEndpoint:
+    """Tests for job stage functionality."""
+
+    def test_default_stage_is_backlog(self, client, sample_job) -> None:
+        """New jobs have stage = Backlog by default."""
+        response = client.get(f"/api/jobs/{sample_job}")
+        assert response.status_code == 200
+        assert response.json()["stage"] == "Backlog"
+
+    def test_update_stage(self, client, sample_job) -> None:
+        """Stage can be updated via PATCH."""
+        response = client.patch(
+            f"/api/jobs/{sample_job}",
+            json={"stage": "Applied"},
+        )
+        assert response.status_code == 200
+        assert response.json()["stage"] == "Applied"
+
+        # Verify it persists
+        response = client.get(f"/api/jobs/{sample_job}")
+        assert response.json()["stage"] == "Applied"
+
+    def test_stage_in_csv_export(self, client, sample_job, test_db) -> None:
+        """Stage is included in CSV export."""
+        # Set a specific stage
+        db = test_db()
+        job = db.query(Job).filter(Job.id == sample_job).first()
+        job.stage = "Interviewing"
+        db.commit()
+        db.close()
+
+        response = client.get("/api/jobs/export")
+        assert response.status_code == 200
+        assert "stage" in response.text
+        assert "Interviewing" in response.text

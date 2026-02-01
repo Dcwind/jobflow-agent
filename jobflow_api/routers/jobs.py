@@ -170,7 +170,7 @@ def export_jobs(
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(
-        ["id", "url", "title", "company", "location", "salary", "description", "created_at"]
+        ["id", "url", "title", "company", "location", "salary", "stage", "description", "created_at"]
     )
     for job in jobs:
         writer.writerow(
@@ -181,6 +181,7 @@ def export_jobs(
                 job.company,
                 job.location or "",
                 job.salary or "",
+                job.stage,
                 job.description or "",
                 job.created_at.isoformat() if job.created_at else "",
             ]

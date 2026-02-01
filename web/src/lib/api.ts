@@ -14,6 +14,7 @@ export interface Job {
   salary: string | null;
   description: string | null;
   extraction_method: string | null;
+  stage: string;
   flagged: boolean;
   created_at: string;
   updated_at: string | null;
@@ -47,6 +48,7 @@ export interface JobUpdate {
   location?: string;
   salary?: string;
   description?: string;
+  stage?: string;
 }
 
 export interface ManualJobInput {
