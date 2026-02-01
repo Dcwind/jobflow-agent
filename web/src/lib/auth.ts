@@ -1,11 +1,24 @@
 import { betterAuth, BetterAuthOptions } from "better-auth";
-import Database from "better-sqlite3";
-import path from "path";
 import { getMigrations } from "better-auth/db";
 
-// Use shared database with FastAPI backend
-const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), "../data/jobs.db");
-const db = new Database(dbPath);
+// Conditional database: PostgreSQL in production, SQLite in development
+function getDatabase() {
+  const databaseUrl = process.env.DATABASE_URL;
+
+  // PostgreSQL if DATABASE_URL starts with postgres
+  if (databaseUrl?.startsWith("postgres")) {
+    const { Pool } = require("pg");
+    return new Pool({ connectionString: databaseUrl });
+  }
+
+  // SQLite (default for development)
+  const Database = require("better-sqlite3");
+  const path = require("path");
+  const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), "../data/jobs.db");
+  return new Database(dbPath);
+}
+
+const db = getDatabase();
 
 const options: BetterAuthOptions = {
   database: db,
