@@ -25,9 +25,12 @@ export function UserMenu() {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm text-gray-600">
-        {session.user.email}
-      </span>
+      <Link
+        href="/account"
+        className="text-sm text-gray-600 hover:text-gray-900 hover:underline"
+      >
+        {session.user.name?.split(" ")[0] || "Account"}
+      </Link>
       <Button
         variant="outline"
         size="sm"

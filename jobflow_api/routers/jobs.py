@@ -260,3 +260,14 @@ def delete_job(
     db.delete(job)
     db.commit()
     return {"deleted": True, "id": job_id}
+
+
+@router.delete("", dependencies=[Depends(verify_api_key)])
+def delete_all_jobs(
+    user: UserInfo = Depends(require_auth),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Delete all jobs for the current user (GDPR right to erasure)."""
+    count = db.query(Job).filter(Job.user_id == user["id"]).delete()
+    db.commit()
+    return {"deleted": True, "count": count}

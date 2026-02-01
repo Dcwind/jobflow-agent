@@ -45,6 +45,22 @@ const options: BetterAuthOptions = {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // Update session every 24 hours
   },
+  user: {
+    deleteUser: {
+      enabled: true,
+      beforeDelete: async (user) => {
+        // GDPR: Delete all user's jobs before deleting account
+        // Uses same database connection as Better Auth
+        if ("run" in db) {
+          // SQLite (better-sqlite3)
+          db.prepare("DELETE FROM jobs WHERE user_id = ?").run(user.id);
+        } else {
+          // PostgreSQL (pg Pool)
+          await db.query("DELETE FROM jobs WHERE user_id = $1", [user.id]);
+        }
+      },
+    },
+  },
 };
 
 // Run migrations on startup (creates auth tables if missing)

@@ -6,9 +6,11 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import Link from "next/link";
 
 export function AuthForm() {
   const handleGoogleSignIn = async () => {
@@ -67,6 +69,14 @@ export function AuthForm() {
           Continue with GitHub
         </Button>
       </CardContent>
+      <CardFooter className="justify-center">
+        <p className="text-sm text-gray-500">
+          By signing in, you agree to our{" "}
+          <Link href="/privacy" className="text-blue-600 hover:underline">
+            Privacy Policy
+          </Link>
+        </p>
+      </CardFooter>
     </Card>
   );
 }

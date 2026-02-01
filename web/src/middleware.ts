@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Routes that don't require authentication (API routes handle their own auth)
-const publicPaths = ["/signin", "/api"];
+const publicPaths = ["/signin", "/api", "/privacy"];
 
 function isPublicPath(pathname: string): boolean {
   return publicPaths.some(
