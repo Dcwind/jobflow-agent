@@ -31,11 +31,14 @@ Open http://localhost:3000, paste job URLs, and extract.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | /api/jobs | Extract jobs from URLs |
+| POST | /api/jobs/manual | Create job manually |
+| POST | /api/jobs/parse | Extract fields from text (LLM) |
 | GET | /api/jobs | List jobs (paginated) |
 | GET | /api/jobs/{id} | Get single job |
 | PATCH | /api/jobs/{id} | Update job fields |
 | PATCH | /api/jobs/{id}/flag | Flag for review |
 | DELETE | /api/jobs/{id} | Delete job |
+| DELETE | /api/jobs | Delete all user jobs |
 | GET | /api/jobs/export | Download CSV |
 
 Swagger UI: http://localhost:8000/docs
@@ -69,7 +72,7 @@ Set `CHECK_ROBOTS=false` to disable robots.txt checking (not recommended for pro
 # Shared package (15 tests)
 uv run --project shared pytest shared/tests/ -v
 
-# API (26 tests)
+# API (19 tests)
 uv run --project jobflow_api pytest jobflow_api/tests/ -v
 ```
 
