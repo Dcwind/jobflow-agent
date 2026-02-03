@@ -137,6 +137,14 @@ def scrape_multiple_jobs(
     return results
 
 
+class LLMServiceError(Exception):
+    """Raised when LLM service is unavailable or fails."""
+
+    def __init__(self, message: str, status_code: int = 500):
+        super().__init__(message)
+        self.status_code = status_code
+
+
 def parse_job_from_text(text: str) -> dict[str, str | None]:
     """Extract job fields from description text using LLM.
 
@@ -145,20 +153,22 @@ def parse_job_from_text(text: str) -> dict[str, str | None]:
 
     Returns:
         Dict with extracted title, company, location, salary (any can be None)
+
+    Raises:
+        LLMServiceError: When LLM service is unavailable or fails
     """
     import json
     import os
 
     LOGGER.info("Parsing job fields from text (%d chars)", len(text))
 
-    # Try LLM extraction
+    api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        LOGGER.warning("No API key for LLM parsing")
+        raise LLMServiceError("LLM service not configured", status_code=503)
+
     try:
         from google import genai
-
-        api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            LOGGER.warning("No API key for LLM parsing")
-            return {"title": None, "company": None, "location": None, "salary": None}
 
         client = genai.Client(api_key=api_key)
 
@@ -202,8 +212,12 @@ JSON:"""
         }
 
     except Exception as e:
+        error_str = str(e).lower()
+        if "429" in error_str or "rate" in error_str or "quota" in error_str:
+            LOGGER.warning("LLM rate limit exceeded: %s", e)
+            raise LLMServiceError("Rate limit exceeded. Try again later.", status_code=429)
         LOGGER.warning("LLM parsing failed: %s", e)
-        return {"title": None, "company": None, "location": None, "salary": None}
+        raise LLMServiceError(f"Extraction failed: {e}", status_code=500)
 
 
 def create_manual_job(

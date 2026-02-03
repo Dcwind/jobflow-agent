@@ -136,19 +136,36 @@ export function JobForm({ onSuccess }: JobFormProps) {
     }
 
     setError(null);
+    setSuccess(null);
     setParsing(true);
     try {
       const parsed = await parseJobDescription(manualForm.description);
-      setManualForm((prev) => ({
-        ...prev,
-        title: parsed.title || prev.title,
-        company: parsed.company || prev.company,
-        location: parsed.location || prev.location,
-        salary: parsed.salary || prev.salary,
-      }));
-      setSuccess("Fields extracted! Review and correct if needed.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to parse description");
+
+      // Check if any fields were extracted
+      const hasFields = parsed.title || parsed.company || parsed.location || parsed.salary;
+
+      if (hasFields) {
+        setManualForm((prev) => ({
+          ...prev,
+          title: parsed.title || prev.title,
+          company: parsed.company || prev.company,
+          location: parsed.location || prev.location,
+          salary: parsed.salary || prev.salary,
+        }));
+        setSuccess("Fields extracted! Review and correct if needed.");
+      } else {
+        setError("Couldn't extract fields from the text. Please enter them manually.");
+      }
+    } catch (err: unknown) {
+      // Handle specific error codes with user-friendly messages
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("503") || message.includes("not configured")) {
+        setError("LLM extraction unavailable. Please enter fields manually.");
+      } else if (message.includes("429") || message.includes("rate") || message.includes("Rate")) {
+        setError("Rate limit exceeded. Please try again later or enter fields manually.");
+      } else {
+        setError("Extraction failed. Please enter fields manually.");
+      }
     } finally {
       setParsing(false);
     }

@@ -24,6 +24,7 @@ from jobflow_api.schemas.job import (
     JobUpdateRequest,
 )
 from jobflow_api.services.scraper import (
+    LLMServiceError,
     create_manual_job,
     parse_job_from_text,
     scrape_multiple_jobs,
@@ -106,8 +107,11 @@ def parse_job_description(request: JobParseRequest) -> JobParseResponse:
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Text is required")
 
-    fields = parse_job_from_text(request.text)
-    return JobParseResponse(**fields)
+    try:
+        fields = parse_job_from_text(request.text)
+        return JobParseResponse(**fields)
+    except LLMServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
 
 
 @router.get("", response_model=JobListResponse)
