@@ -215,9 +215,9 @@ JSON:"""
         error_str = str(e).lower()
         if "429" in error_str or "rate" in error_str or "quota" in error_str:
             LOGGER.warning("LLM rate limit exceeded: %s", e)
-            raise LLMServiceError("Rate limit exceeded. Try again later.", status_code=429)
+            raise LLMServiceError("Rate limit exceeded. Try again later.", status_code=429) from e
         LOGGER.warning("LLM parsing failed: %s", e)
-        raise LLMServiceError(f"Extraction failed: {e}", status_code=500)
+        raise LLMServiceError(f"Extraction failed: {e}", status_code=500) from e
 
 
 def create_manual_job(

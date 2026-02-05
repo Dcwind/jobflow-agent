@@ -111,7 +111,7 @@ def parse_job_description(request: JobParseRequest) -> JobParseResponse:
         fields = parse_job_from_text(request.text)
         return JobParseResponse(**fields)
     except LLMServiceError as e:
-        raise HTTPException(status_code=e.status_code, detail=str(e))
+        raise HTTPException(status_code=e.status_code, detail=str(e)) from None
 
 
 @router.get("", response_model=JobListResponse)

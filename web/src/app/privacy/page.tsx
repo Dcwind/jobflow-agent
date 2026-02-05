@@ -45,7 +45,7 @@ export default function PrivacyPolicyPage() {
           <ul className="list-disc pl-6 space-y-2">
             <li><strong>Access:</strong> Export your jobs as CSV from the main dashboard</li>
             <li><strong>Rectification:</strong> Edit your job details at any time</li>
-            <li><strong>Erasure:</strong> Delete your account and all associated data using the "Delete Account" button</li>
+            <li><strong>Erasure:</strong> Delete your account and all associated data from the Account page</li>
             <li><strong>Portability:</strong> Download your data in CSV format</li>
           </ul>
         </section>
