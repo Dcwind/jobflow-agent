@@ -203,7 +203,7 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
                 </TableCell>
                 <TableCell>
                   {job.flagged && (
-                    <Badge variant="destructive" className="text-xs">
+                    <Badge variant="outline" className="text-xs">
                       Has issue
                     </Badge>
                   )}

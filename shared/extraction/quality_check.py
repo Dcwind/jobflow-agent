@@ -66,7 +66,7 @@ def _get_genai_client() -> Any:
 def validate_extraction(
     result: ExtractionResult,
     page_title: str | None = None,
-    model_name: str = "gemini-1.5-flash",
+    model_name: str = "gemini-2.5-flash-lite",
 ) -> QualityResult:
     """Validate extracted job data using LLM.
 

@@ -184,7 +184,7 @@ Text:
 JSON:"""
 
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash-lite",
             contents=prompt,
         )
 
@@ -213,7 +213,7 @@ JSON:"""
 
     except Exception as e:
         error_str = str(e).lower()
-        if "429" in error_str or "rate" in error_str or "quota" in error_str:
+        if "429" in error_str or "rate limit" in error_str or "resource exhausted" in error_str or "quota" in error_str:
             LOGGER.warning("LLM rate limit exceeded: %s", e)
             raise LLMServiceError("Rate limit exceeded. Try again later.", status_code=429) from e
         LOGGER.warning("LLM parsing failed: %s", e)

@@ -223,6 +223,7 @@ export function JobForm({ onSuccess }: JobFormProps) {
                 onChange={(e) => updateManualField("description", e.target.value)}
                 rows={6}
                 disabled={loading || parsing}
+                className="max-h-48 overflow-y-auto !field-sizing-normal"
               />
               <div className="flex items-center justify-between mt-1">
                 <p className="text-xs text-gray-500">

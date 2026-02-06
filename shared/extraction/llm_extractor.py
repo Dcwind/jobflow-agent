@@ -48,7 +48,7 @@ def _get_genai_client() -> Any:
         raise ImportError("google-genai package not installed") from e
 
 
-def extract_with_llm(html: str, model_name: str = "gemini-1.5-flash") -> ExtractionResult:
+def extract_with_llm(html: str, model_name: str = "gemini-2.5-flash-lite") -> ExtractionResult:
     """Extract job fields using LLM.
 
     Args:
