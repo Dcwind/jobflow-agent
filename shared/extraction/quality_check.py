@@ -52,22 +52,21 @@ class QualityResult:
 def _get_genai_client() -> Any:
     """Get the Google Generative AI client."""
     try:
-        import google.generativeai as genai
+        from google import genai
 
-        api_key = os.environ.get("GOOGLE_API_KEY")
+        api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
         if not api_key:
-            raise ValueError("GOOGLE_API_KEY environment variable not set")
+            raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set")
 
-        genai.configure(api_key=api_key)
-        return genai
+        return genai.Client(api_key=api_key)
     except ImportError as e:
-        raise ImportError("google-generativeai package not installed") from e
+        raise ImportError("google-genai package not installed") from e
 
 
 def validate_extraction(
     result: ExtractionResult,
     page_title: str | None = None,
-    model_name: str = "gemini-1.5-flash",
+    model_name: str = "gemini-2.5-flash-lite",
 ) -> QualityResult:
     """Validate extracted job data using LLM.
 
@@ -80,8 +79,7 @@ def validate_extraction(
         QualityResult with validation outcome
     """
     try:
-        genai = _get_genai_client()
-        model = genai.GenerativeModel(model_name)
+        client = _get_genai_client()
 
         prompt = VALIDATION_PROMPT.format(
             title=result.title,
@@ -91,7 +89,7 @@ def validate_extraction(
             page_title=page_title or "Not available",
         )
 
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(model=model_name, contents=prompt)
         response_text = response.text.strip()
 
         # Handle markdown code blocks

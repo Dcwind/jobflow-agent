@@ -12,6 +12,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Job, updateJob, flagJob, deleteJob } from "@/lib/api";
 
 interface JobsTableProps {
@@ -24,6 +31,15 @@ interface EditingState {
   field: "title" | "company" | "location" | "salary";
   value: string;
 }
+
+const STAGE_OPTIONS = [
+  "Backlog",
+  "Applied",
+  "Interviewing",
+  "Offer",
+  "Rejected",
+  "Archived",
+] as const;
 
 export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
   const [editing, setEditing] = useState<EditingState | null>(null);
@@ -57,6 +73,18 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
 
   const handleCancel = () => {
     setEditing(null);
+  };
+
+  const handleStageChange = async (job: Job, newStage: string) => {
+    setLoading(job.id);
+    try {
+      await updateJob(job.id, { stage: newStage });
+      onRefresh();
+    } catch (err) {
+      console.error("Failed to update stage:", err);
+    } finally {
+      setLoading(null);
+    }
   };
 
   const handleFlag = async (job: Job) => {
@@ -134,8 +162,9 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
             <TableHead>Company</TableHead>
             <TableHead>Location</TableHead>
             <TableHead>Salary</TableHead>
+            <TableHead>Stage</TableHead>
             <TableHead>Source</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>System</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -150,14 +179,32 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
                 <TableCell>{renderCell(job, "location")}</TableCell>
                 <TableCell>{renderCell(job, "salary")}</TableCell>
                 <TableCell>
+                  <Select
+                    value={job.stage}
+                    onValueChange={(value) => handleStageChange(job, value)}
+                    disabled={loading === job.id}
+                  >
+                    <SelectTrigger className="h-8 w-[130px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STAGE_OPTIONS.map((stage) => (
+                        <SelectItem key={stage} value={stage}>
+                          {stage}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
                   <Badge variant="outline" className="text-xs">
                     {job.extraction_method || "unknown"}
                   </Badge>
                 </TableCell>
                 <TableCell>
                   {job.flagged && (
-                    <Badge variant="destructive" className="text-xs">
-                      Flagged
+                    <Badge variant="outline" className="text-xs">
+                      Has issue
                     </Badge>
                   )}
                 </TableCell>
@@ -175,12 +222,12 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="min-w-[70px]"
+                      className="min-w-[90px]"
                       onClick={() => handleFlag(job)}
                       disabled={loading === job.id}
-                      title={job.flagged ? "Unflag" : "Flag for review"}
+                      title={job.flagged ? "Clear issue flag" : "Mark as having an issue"}
                     >
-                      {job.flagged ? "Unflag" : "Flag"}
+                      {job.flagged ? "Clear issue" : "Mark issue"}
                     </Button>
                     <Button
                       size="sm"
@@ -205,7 +252,7 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
               </TableRow>
               {expandedId === job.id && job.description && (
                 <TableRow className="bg-gray-50">
-                  <TableCell colSpan={7} className="py-4">
+                  <TableCell colSpan={8} className="py-4">
                     <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-64 overflow-y-auto">
                       {job.description}
                     </div>

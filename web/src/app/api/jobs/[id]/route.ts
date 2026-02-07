@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendHeaders } from "@/lib/api-headers";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
-const API_KEY = process.env.API_KEY;
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
-  const response = await fetch(`${BACKEND_URL}/api/jobs/${id}`);
+  const headers = await getBackendHeaders();
+  const response = await fetch(`${BACKEND_URL}/api/jobs/${id}`, { headers });
   const data = await response.json();
 
   return NextResponse.json(data, { status: response.status });
@@ -16,13 +17,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
   const body = await request.json();
-
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
-  if (API_KEY) {
-    headers["X-API-Key"] = API_KEY;
-  }
+  const headers = await getBackendHeaders(true);
 
   const response = await fetch(`${BACKEND_URL}/api/jobs/${id}`, {
     method: "PATCH",
@@ -36,11 +31,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
-
-  const headers: HeadersInit = {};
-  if (API_KEY) {
-    headers["X-API-Key"] = API_KEY;
-  }
+  const headers = await getBackendHeaders();
 
   const response = await fetch(`${BACKEND_URL}/api/jobs/${id}`, {
     method: "DELETE",

@@ -11,6 +11,7 @@ import requests
 
 from shared.extraction.bs4_extractor import ExtractionResult, extract_with_bs4
 from shared.extraction.pii_filter import filter_pii_from_result
+from shared.extraction.robots_checker import is_allowed as robots_allowed
 
 LOGGER = logging.getLogger(__name__)
 
@@ -112,10 +113,12 @@ def extract_job(
     use_llm_fallback: bool = True,
     use_llm_validation: bool = True,
     apply_pii_filter: bool = True,
+    check_robots: bool = True,
 ) -> tuple[ExtractionResult | None, ExtractionMetrics]:
     """Extract job fields from URL using fallback chain.
 
     Pipeline:
+    0. Check robots.txt compliance
     1. Fetch with requests → extract with BS4
     2. If poor quality → fetch with Playwright → extract with BS4
     3. If still poor → extract with LLM
@@ -128,12 +131,24 @@ def extract_job(
         use_llm_fallback: Whether to use LLM extraction as fallback
         use_llm_validation: Whether to validate extraction with LLM
         apply_pii_filter: Whether to filter PII from description
+        check_robots: Whether to check robots.txt before scraping
 
     Returns:
         Tuple of (extraction result or None, metrics)
     """
     if not _is_valid_url(url):
         LOGGER.error("Invalid or unsafe URL: %s", url)
+        return None, ExtractionMetrics(
+            fetch_method="requests",
+            extraction_method="bs4",
+            validation_run=False,
+            confidence=0.0,
+            fallbacks_used=0,
+        )
+
+    # Step 0: Check robots.txt compliance
+    if check_robots and not robots_allowed(url):
+        LOGGER.warning("Robots.txt disallows scraping: %s", url)
         return None, ExtractionMetrics(
             fetch_method="requests",
             extraction_method="bs4",
@@ -157,7 +172,7 @@ def extract_job(
     # Step 2: Extract with BS4
     result: ExtractionResult | None = None
     if html:
-        result = extract_with_bs4(html)
+        result = extract_with_bs4(html, url)
         LOGGER.info("BS4 extraction: title=%s, company=%s", result.title, result.company)
 
         # Check if extraction is complete
@@ -175,7 +190,7 @@ def extract_job(
         if playwright_html:
             metrics.fetch_method = "playwright"
             html = playwright_html
-            result = extract_with_bs4(html)
+            result = extract_with_bs4(html, url)
             LOGGER.info("Playwright + BS4: title=%s, company=%s", result.title, result.company)
 
             if result.is_complete():

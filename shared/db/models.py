@@ -19,6 +19,7 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     url: Mapped[str] = mapped_column(String(2048), nullable=False, unique=True)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     company: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -26,6 +27,7 @@ class Job(Base):
     salary: Mapped[str | None] = mapped_column(String(100), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     extraction_method: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    stage: Mapped[str] = mapped_column(String(20), default="Backlog", nullable=False)
     flagged: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime | None] = mapped_column(
@@ -42,6 +44,7 @@ class Job(Base):
         """Convert to dictionary for API responses."""
         return {
             "id": self.id,
+            "user_id": self.user_id,
             "url": self.url,
             "title": self.title,
             "company": self.company,
@@ -49,6 +52,7 @@ class Job(Base):
             "salary": self.salary,
             "description": self.description,
             "extraction_method": self.extraction_method,
+            "stage": self.stage,
             "flagged": bool(self.flagged),
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Lint shared
+        working-directory: shared
+        run: uv run --group dev ruff check .
+
+      - name: Lint jobflow_api
+        working-directory: jobflow_api
+        run: uv run --group dev ruff check .
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        working-directory: jobflow_api
+        run: uv sync --group dev
+
+      - name: Run tests
+        working-directory: jobflow_api
+        run: uv run pytest tests/ -v
+        env:
+          JOBFLOW_API_KEY: test-key

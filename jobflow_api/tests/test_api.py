@@ -11,7 +11,11 @@ from shared.db.session import get_db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from jobflow_api.dependencies import require_auth
 from jobflow_api.main import app
+
+# Test user for mocking authentication
+TEST_USER = {"id": "test-user-123", "email": "test@example.com", "name": "Test User"}
 
 
 @pytest.fixture
@@ -30,7 +34,11 @@ def test_db():
             finally:
                 db.close()
 
+        def override_require_auth():
+            return TEST_USER
+
         app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[require_auth] = override_require_auth
         yield TestingSessionLocal
         app.dependency_overrides.clear()
 
@@ -47,6 +55,7 @@ def sample_job(test_db):
     db = test_db()
     job = Job(
         url="https://example.com/job/123",
+        user_id=TEST_USER["id"],
         title="Software Engineer",
         company="ACME Corp",
         location="San Francisco, CA",
@@ -102,7 +111,12 @@ class TestJobsListEndpoint:
         # Create 5 jobs
         db = test_db()
         for i in range(5):
-            job = Job(url=f"https://example.com/job/{i}", title=f"Job {i}", company="ACME")
+            job = Job(
+                url=f"https://example.com/job/{i}",
+                user_id=TEST_USER["id"],
+                title=f"Job {i}",
+                company="ACME",
+            )
             db.add(job)
         db.commit()
         db.close()
@@ -248,3 +262,40 @@ class TestJobsCreateEndpoint:
             assert data["succeeded"] == 1
             assert data["failed"] == 0
             assert data["results"][0]["job"]["title"] == "Backend Developer"
+
+
+class TestJobsStageEndpoint:
+    """Tests for job stage functionality."""
+
+    def test_default_stage_is_backlog(self, client, sample_job) -> None:
+        """New jobs have stage = Backlog by default."""
+        response = client.get(f"/api/jobs/{sample_job}")
+        assert response.status_code == 200
+        assert response.json()["stage"] == "Backlog"
+
+    def test_update_stage(self, client, sample_job) -> None:
+        """Stage can be updated via PATCH."""
+        response = client.patch(
+            f"/api/jobs/{sample_job}",
+            json={"stage": "Applied"},
+        )
+        assert response.status_code == 200
+        assert response.json()["stage"] == "Applied"
+
+        # Verify it persists
+        response = client.get(f"/api/jobs/{sample_job}")
+        assert response.json()["stage"] == "Applied"
+
+    def test_stage_in_csv_export(self, client, sample_job, test_db) -> None:
+        """Stage is included in CSV export."""
+        # Set a specific stage
+        db = test_db()
+        job = db.query(Job).filter(Job.id == sample_job).first()
+        job.stage = "Interviewing"
+        db.commit()
+        db.close()
+
+        response = client.get("/api/jobs/export")
+        assert response.status_code == 200
+        assert "stage" in response.text
+        assert "Interviewing" in response.text

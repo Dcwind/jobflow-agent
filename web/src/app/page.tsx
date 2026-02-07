@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { JobForm } from "@/components/JobForm";
 import { JobsTable } from "@/components/JobsTable";
 import { ExportButton } from "@/components/ExportButton";
+import { UserMenu } from "@/components/UserMenu";
 import { Button } from "@/components/ui/button";
 import { listJobs, Job, JobListResponse } from "@/lib/api";
 
@@ -46,11 +47,14 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full max-w-7xl mx-auto py-8 px-4">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Jobflow</h1>
-          <p className="text-gray-600 mt-1">
-            Extract and track job postings from any URL
-          </p>
+        <header className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Jobflow</h1>
+            <p className="text-gray-600 mt-1">
+              Extract and track job postings from any URL
+            </p>
+          </div>
+          <UserMenu />
         </header>
 
         <div className="grid gap-6">

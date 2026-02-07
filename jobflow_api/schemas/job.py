@@ -11,6 +11,32 @@ class JobCreateRequest(BaseModel):
     urls: list[HttpUrl]
 
 
+class JobManualCreateRequest(BaseModel):
+    """Request to manually create a job (for sites that block scraping)."""
+
+    title: str
+    company: str
+    location: str | None = None
+    salary: str | None = None
+    description: str | None = None
+    url: str | None = None  # Optional - omit for blocked domains
+
+
+class JobParseRequest(BaseModel):
+    """Request to parse job fields from description text."""
+
+    text: str
+
+
+class JobParseResponse(BaseModel):
+    """Extracted job fields from description text."""
+
+    title: str | None = None
+    company: str | None = None
+    location: str | None = None
+    salary: str | None = None
+
+
 class JobUpdateRequest(BaseModel):
     """Request to update a job."""
 
@@ -19,6 +45,7 @@ class JobUpdateRequest(BaseModel):
     location: str | None = None
     salary: str | None = None
     description: str | None = None
+    stage: str | None = None
 
 
 class JobFlagRequest(BaseModel):
@@ -38,6 +65,7 @@ class JobResponse(BaseModel):
     salary: str | None
     description: str | None
     extraction_method: str | None
+    stage: str
     flagged: bool
     created_at: datetime
     updated_at: datetime | None
