@@ -40,18 +40,21 @@ def get_current_user(
     token = authorization[7:]
 
     # Query session and user tables (created by Better Auth)
+    # Note: Better Auth uses camelCase columns, must quote for PostgreSQL
     try:
         result = db.execute(
             text("""
                 SELECT u.id, u.email, u.name
-                FROM user u
-                JOIN session s ON s.userId = u.id
-                WHERE s.token = :token AND s.expiresAt > :now
+                FROM "user" u
+                JOIN "session" s ON s."userId" = u.id
+                WHERE s.token = :token AND s."expiresAt" > :now
             """),
             {"token": token, "now": datetime.now(UTC)},
         ).first()
-    except Exception:
+    except Exception as e:
         # Tables may not exist yet or query failed
+        import logging
+        logging.getLogger(__name__).error("Session query failed: %s", e)
         return None
 
     if not result:
