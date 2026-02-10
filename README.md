@@ -86,7 +86,10 @@ Production runs on **Railway** (API + PostgreSQL) and **Vercel** (frontend).
 2. Add service from repo (Dockerfile: `jobflow_api/Dockerfile`)
 3. Connect Postgres to the service (auto-injects `DATABASE_URL`)
 4. Set environment variables (see table below)
-5. After first deploy: `railway run alembic stamp head` to sync migrations
+5. After first deploy, sync Alembic (use **public** URL from Railway Postgres variables):
+   ```bash
+   cd shared && DATABASE_URL="<public-url>" uv run alembic stamp head
+   ```
 
 ### Vercel (Frontend)
 
