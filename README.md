@@ -76,39 +76,48 @@ uv run --project shared pytest shared/tests/ -v
 uv run --project jobflow_api pytest jobflow_api/tests/ -v
 ```
 
-## Deployment (Railway)
+## Deployment
 
-The repo includes Dockerfiles for both services.
+Production runs on **Railway** (API + PostgreSQL) and **Vercel** (frontend).
 
-**API Service:**
-- Root directory: `/` (needs access to shared/)
-- Dockerfile: `jobflow_api/Dockerfile`
-- Environment variables:
-  - `DATABASE_URL` — SQLite path (default: `sqlite:///./data/jobs.db`)
-  - `CORS_ORIGINS` — Frontend URL (e.g., `https://your-frontend.railway.app`)
-  - `GOOGLE_API_KEY` — Optional, for LLM fallback
+### Railway (Backend + Database)
 
-**Frontend Service:**
-- Root directory: `web/`
-- Dockerfile: `web/Dockerfile`
-- Build args:
-  - `NEXT_PUBLIC_API_URL` — API URL (e.g., `https://your-api.railway.app`)
+1. Create project, add PostgreSQL database
+2. Add service from repo (Dockerfile: `jobflow_api/Dockerfile`)
+3. Connect Postgres to the service (auto-injects `DATABASE_URL`)
+4. Set environment variables (see table below)
+5. After first deploy: `railway run alembic stamp head` to sync migrations
 
-**Railway Setup:**
-1. Create new project
-2. Add two services from the same repo
-3. Configure root directories and environment variables
-4. Add persistent volume for SQLite (mount at `/app/data`)
+### Vercel (Frontend)
+
+1. Import repo, set root directory to `web/`
+2. Set environment variables (see table below)
+3. Add Google OAuth callback URL: `https://your-app.vercel.app/api/auth/callback/google`
 
 ## Environment Variables
 
-| Variable | Service | Description |
-|----------|---------|-------------|
-| `GOOGLE_API_KEY` | API | Gemini API key for LLM features |
-| `DATABASE_URL` | API | SQLite connection string |
-| `CORS_ORIGINS` | API | Allowed frontend origins (comma-separated) |
-| `CHECK_ROBOTS` | API | Check robots.txt before scraping (default: `true`) |
-| `NEXT_PUBLIC_API_URL` | Frontend | Backend API URL |
+### Railway (API)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Auto | PostgreSQL connection (auto-injected by Railway) |
+| `CORS_ORIGINS` | Yes | Frontend URL, e.g., `["https://your-app.vercel.app"]` |
+| `API_KEY` | Yes | Shared secret for Vercel → Railway auth |
+| `GOOGLE_API_KEY` | No | Gemini API key for LLM extraction |
+
+### Vercel (Frontend)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL **public** URL (for Better Auth) |
+| `BACKEND_URL` | Yes | Railway API URL |
+| `API_KEY` | Yes | Must match Railway's `API_KEY` |
+| `BETTER_AUTH_SECRET` | Yes | Random secret for session signing |
+| `NEXT_PUBLIC_APP_URL` | Yes | Vercel app URL (for OAuth callbacks) |
+| `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret |
+| `GITHUB_CLIENT_ID` | No | GitHub OAuth client ID |
+| `GITHUB_CLIENT_SECRET` | No | GitHub OAuth client secret |
 
 ## License
 
