@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { JobDetailsSheet } from "@/components/JobDetailsSheet";
 import { Job, updateJob, flagJob, deleteJob } from "@/lib/api";
 
 interface JobsTableProps {
@@ -44,7 +45,7 @@ const STAGE_OPTIONS = [
 export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [loading, setLoading] = useState<number | null>(null);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   const handleEdit = (
     job: Job,
@@ -154,24 +155,27 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
   }
 
   return (
-    <div className="rounded-md border overflow-x-auto scroll-padding-fix">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Company</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead>Salary</TableHead>
-            <TableHead>Stage</TableHead>
-            <TableHead>Source</TableHead>
-            <TableHead>System</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {jobs.map((job) => (
-            <Fragment key={job.id}>
-              <TableRow className={job.flagged ? "bg-yellow-50" : ""}>
+    <>
+      <div className="rounded-md border overflow-x-auto scroll-padding-fix">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Company</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Salary</TableHead>
+              <TableHead>Stage</TableHead>
+              <TableHead>Source</TableHead>
+              <TableHead>System</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {jobs.map((job) => (
+              <TableRow
+                key={job.id}
+                className={job.flagged ? "bg-yellow-50" : ""}
+              >
                 <TableCell className="font-medium">
                   {renderCell(job, "title")}
                 </TableCell>
@@ -214,10 +218,10 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
                       size="sm"
                       variant="outline"
                       className="min-w-[70px]"
-                      onClick={() => setExpandedId(expandedId === job.id ? null : job.id)}
+                      onClick={() => setSelectedJob(job)}
                       disabled={!job.description}
                     >
-                      {expandedId === job.id ? "Hide" : "Details"}
+                      Details
                     </Button>
                     <Button
                       size="sm"
@@ -250,19 +254,14 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
                   </div>
                 </TableCell>
               </TableRow>
-              {expandedId === job.id && job.description && (
-                <TableRow className="bg-gray-50">
-                  <TableCell colSpan={8} className="py-4">
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-64 overflow-y-auto">
-                      {job.description}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </Fragment>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <JobDetailsSheet
+        job={selectedJob}
+        onClose={() => setSelectedJob(null)}
+      />
+    </>
   );
 }
