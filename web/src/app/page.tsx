@@ -6,7 +6,9 @@ import { JobsTable } from "@/components/JobsTable";
 import { ExportButton } from "@/components/ExportButton";
 import { UserMenu } from "@/components/UserMenu";
 import { StageFilterBar, StageFilter } from "@/components/StageFilter";
+import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { listJobs, Job, JobListResponse } from "@/lib/api";
 
 export default function Home() {
@@ -15,6 +17,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [stageFilter, setStageFilter] = useState<StageFilter>(null);
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
+  const [addOpen, setAddOpen] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     pages: 1,
@@ -102,8 +105,6 @@ export default function Home() {
         </header>
 
         <div className="grid gap-6">
-          <JobForm onSuccess={handleRefresh} />
-
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">
               Saved Jobs {pagination.total > 0 && `(${pagination.total})`}
@@ -113,6 +114,10 @@ export default function Home() {
                 Refresh
               </Button>
               <ExportButton disabled={jobs.length === 0} />
+              <Button onClick={() => setAddOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Add jobs
+              </Button>
             </div>
           </div>
 
@@ -157,6 +162,31 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      <Sheet open={addOpen} onClose={() => setAddOpen(false)}>
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between border-b border-neutral-200/70 px-8 py-4">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
+              Add jobs
+            </div>
+            <button
+              onClick={() => setAddOpen(false)}
+              className="text-sm text-neutral-500 transition-colors hover:text-neutral-900"
+              aria-label="Close"
+            >
+              Close ✕
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-8">
+            <JobForm
+              onSuccess={() => {
+                handleRefresh();
+                setAddOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }
