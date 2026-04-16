@@ -120,6 +120,7 @@ def list_jobs(
     per_page: int = 20,
     company: str | None = None,
     flagged: bool | None = None,
+    stage: str | None = None,
     user: UserInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ) -> JobListResponse:
@@ -136,6 +137,8 @@ def list_jobs(
         query = query.filter(Job.company.ilike(f"%{company}%"))
     if flagged is not None:
         query = query.filter(Job.flagged == (1 if flagged else 0))
+    if stage:
+        query = query.filter(Job.stage == stage)
 
     # Get total count
     total = query.count()

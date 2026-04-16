@@ -5,6 +5,7 @@ import { JobForm } from "@/components/JobForm";
 import { JobsTable } from "@/components/JobsTable";
 import { ExportButton } from "@/components/ExportButton";
 import { UserMenu } from "@/components/UserMenu";
+import { StageFilterBar, StageFilter } from "@/components/StageFilter";
 import { Button } from "@/components/ui/button";
 import { listJobs, Job, JobListResponse } from "@/lib/api";
 
@@ -12,36 +13,48 @@ export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stageFilter, setStageFilter] = useState<StageFilter>(null);
   const [pagination, setPagination] = useState({
     page: 1,
     pages: 1,
     total: 0,
   });
 
-  const fetchJobs = useCallback(async (page = 1) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response: JobListResponse = await listJobs(page);
-      setJobs(response.jobs);
-      setPagination({
-        page: response.page,
-        pages: response.pages,
-        total: response.total,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch jobs");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchJobs = useCallback(
+    async (page = 1, stage: StageFilter = null) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response: JobListResponse = await listJobs(
+          page,
+          20,
+          stage ? { stage } : undefined
+        );
+        setJobs(response.jobs);
+        setPagination({
+          page: response.page,
+          pages: response.pages,
+          total: response.total,
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch jobs");
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
+    fetchJobs(1, stageFilter);
+  }, [fetchJobs, stageFilter]);
 
   const handleRefresh = () => {
-    fetchJobs(pagination.page);
+    fetchJobs(pagination.page, stageFilter);
+  };
+
+  const handleStageFilterChange = (next: StageFilter) => {
+    setStageFilter(next);
   };
 
   return (
@@ -72,6 +85,11 @@ export default function Home() {
             </div>
           </div>
 
+          <StageFilterBar
+            value={stageFilter}
+            onChange={handleStageFilterChange}
+          />
+
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
               {error}
@@ -88,7 +106,7 @@ export default function Home() {
             <div className="flex justify-center gap-2">
               <Button
                 variant="outline"
-                onClick={() => fetchJobs(pagination.page - 1)}
+                onClick={() => fetchJobs(pagination.page - 1, stageFilter)}
                 disabled={pagination.page <= 1 || loading}
               >
                 Previous
@@ -98,7 +116,7 @@ export default function Home() {
               </span>
               <Button
                 variant="outline"
-                onClick={() => fetchJobs(pagination.page + 1)}
+                onClick={() => fetchJobs(pagination.page + 1, stageFilter)}
                 disabled={pagination.page >= pagination.pages || loading}
               >
                 Next
