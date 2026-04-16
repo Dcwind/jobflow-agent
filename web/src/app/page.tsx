@@ -14,6 +14,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stageFilter, setStageFilter] = useState<StageFilter>(null);
+  const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
   const [pagination, setPagination] = useState({
     page: 1,
     pages: 1,
@@ -31,6 +32,7 @@ export default function Home() {
           stage ? { stage } : undefined
         );
         setJobs(response.jobs);
+        setStageCounts(response.stage_counts ?? {});
         setPagination({
           page: response.page,
           pages: response.pages,
@@ -44,6 +46,11 @@ export default function Home() {
     },
     []
   );
+
+  const totalJobs = Object.values(stageCounts).reduce((a, b) => a + b, 0);
+  const activeCount = stageCounts["Applied"] ?? 0;
+  const interviewingCount = stageCounts["Interviewing"] ?? 0;
+  const offerCount = stageCounts["Offer"] ?? 0;
 
   useEffect(() => {
     fetchJobs(1, stageFilter);
@@ -63,9 +70,33 @@ export default function Home() {
         <header className="mb-8 flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Jobflow</h1>
-            <p className="text-gray-600 mt-1">
-              Extract and track job postings from any URL
-            </p>
+            {totalJobs > 0 ? (
+              <p className="mt-1 text-sm text-gray-600">
+                <span className="font-medium text-gray-900">{totalJobs}</span>{" "}
+                in pipeline
+                <span className="mx-2 text-gray-300">·</span>
+                <span className="font-medium text-gray-900">{activeCount}</span>{" "}
+                applied
+                <span className="mx-2 text-gray-300">·</span>
+                <span className="font-medium text-gray-900">
+                  {interviewingCount}
+                </span>{" "}
+                interviewing
+                {offerCount > 0 && (
+                  <>
+                    <span className="mx-2 text-gray-300">·</span>
+                    <span className="font-medium text-emerald-700">
+                      {offerCount}
+                    </span>{" "}
+                    {offerCount === 1 ? "offer" : "offers"}
+                  </>
+                )}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-gray-600">
+                Add a job URL to start tracking your pipeline.
+              </p>
+            )}
           </div>
           <UserMenu />
         </header>
@@ -88,6 +119,7 @@ export default function Home() {
           <StageFilterBar
             value={stageFilter}
             onChange={handleStageFilterChange}
+            counts={stageCounts}
           />
 
           {error && (

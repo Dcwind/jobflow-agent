@@ -40,6 +40,7 @@ export interface JobListResponse {
   page: number;
   per_page: number;
   pages: number;
+  stage_counts: Record<string, number>;
 }
 
 export interface JobUpdate {

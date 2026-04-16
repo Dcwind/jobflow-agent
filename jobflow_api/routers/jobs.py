@@ -7,6 +7,7 @@ from math import ceil
 from fastapi import APIRouter, Depends, HTTPException, Response
 from shared.db.models import Job
 from shared.db.session import get_db
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from jobflow_api.config import get_settings
@@ -147,12 +148,23 @@ def list_jobs(
     # Paginate
     jobs = query.order_by(Job.created_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
 
+    # Pipeline-wide stage counts (ignore current filters so the header always
+    # reflects the user's whole pipeline, not just the active view)
+    stage_rows = (
+        db.query(Job.stage, func.count(Job.id))
+        .filter(Job.user_id == user["id"])
+        .group_by(Job.stage)
+        .all()
+    )
+    stage_counts = {stage: count for stage, count in stage_rows}
+
     return JobListResponse(
         jobs=[JobResponse.model_validate(job) for job in jobs],
         total=total,
         page=page,
         per_page=per_page,
         pages=pages,
+        stage_counts=stage_counts,
     )
 
 
