@@ -40,6 +40,7 @@ export interface JobListResponse {
   page: number;
   per_page: number;
   pages: number;
+  stage_counts: Record<string, number>;
 }
 
 export interface JobUpdate {
@@ -115,7 +116,7 @@ export async function parseJobDescription(text: string): Promise<ParsedJobFields
 export async function listJobs(
   page = 1,
   perPage = 20,
-  filters?: { company?: string; flagged?: boolean }
+  filters?: { company?: string; flagged?: boolean; stage?: string }
 ): Promise<JobListResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -124,6 +125,7 @@ export async function listJobs(
   if (filters?.company) params.set("company", filters.company);
   if (filters?.flagged !== undefined)
     params.set("flagged", filters.flagged.toString());
+  if (filters?.stage) params.set("stage", filters.stage);
 
   const response = await fetch(`${API_BASE}/api/jobs?${params}`);
   return handleResponse<JobListResponse>(response);

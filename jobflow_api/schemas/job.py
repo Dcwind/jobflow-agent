@@ -99,3 +99,4 @@ class JobListResponse(BaseModel):
     page: int
     per_page: int
     pages: int
+    stage_counts: dict[str, int] = {}

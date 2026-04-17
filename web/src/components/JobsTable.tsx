@@ -10,7 +10,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { JobDetailsSheet } from "@/components/JobDetailsSheet";
 import { Job, updateJob, flagJob, deleteJob } from "@/lib/api";
+import { Flag, Trash2 } from "lucide-react";
 
 interface JobsTableProps {
   jobs: Job[];
@@ -165,9 +165,7 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
               <TableHead>Location</TableHead>
               <TableHead>Salary</TableHead>
               <TableHead>Stage</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead>System</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -201,55 +199,43 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
                   </Select>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="text-xs">
-                    {job.extraction_method || "unknown"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {job.flagged && (
-                    <Badge variant="outline" className="text-xs">
-                      Has issue
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1 flex-nowrap items-center">
+                  <div className="flex gap-1 flex-nowrap items-center justify-end">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="min-w-[70px]"
                       onClick={() => setSelectedJob(job)}
                       disabled={!job.description}
                     >
                       Details
                     </Button>
                     <Button
-                      size="sm"
-                      variant="outline"
-                      className="min-w-[90px]"
+                      size="icon-sm"
+                      variant="ghost"
+                      className={
+                        job.flagged
+                          ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                          : "text-neutral-400 hover:text-amber-600 hover:bg-amber-50"
+                      }
                       onClick={() => handleFlag(job)}
                       disabled={loading === job.id}
-                      title={job.flagged ? "Clear issue flag" : "Mark as having an issue"}
+                      title={job.flagged ? "Clear flag" : "Flag issue"}
+                      aria-label={job.flagged ? "Clear flag" : "Flag issue"}
                     >
-                      {job.flagged ? "Clear issue" : "Mark issue"}
+                      <Flag
+                        className="h-4 w-4"
+                        fill={job.flagged ? "currentColor" : "none"}
+                      />
                     </Button>
                     <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      size="icon-sm"
+                      variant="ghost"
+                      className="text-neutral-400 hover:text-red-600 hover:bg-red-50"
                       onClick={() => handleDelete(job)}
                       disabled={loading === job.id}
+                      title="Delete"
+                      aria-label="Delete"
                     >
-                      Delete
-                    </Button>
-                    <Button size="sm" variant="outline" asChild>
-                      <a
-                        href={job.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View
-                      </a>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>

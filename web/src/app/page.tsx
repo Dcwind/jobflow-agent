@@ -5,43 +5,66 @@ import { JobForm } from "@/components/JobForm";
 import { JobsTable } from "@/components/JobsTable";
 import { ExportButton } from "@/components/ExportButton";
 import { UserMenu } from "@/components/UserMenu";
+import { StageFilterBar, StageFilter } from "@/components/StageFilter";
+import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { listJobs, Job, JobListResponse } from "@/lib/api";
 
 export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stageFilter, setStageFilter] = useState<StageFilter>(null);
+  const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
+  const [addOpen, setAddOpen] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     pages: 1,
     total: 0,
   });
 
-  const fetchJobs = useCallback(async (page = 1) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response: JobListResponse = await listJobs(page);
-      setJobs(response.jobs);
-      setPagination({
-        page: response.page,
-        pages: response.pages,
-        total: response.total,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch jobs");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchJobs = useCallback(
+    async (page = 1, stage: StageFilter = null) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response: JobListResponse = await listJobs(
+          page,
+          20,
+          stage ? { stage } : undefined
+        );
+        setJobs(response.jobs);
+        setStageCounts(response.stage_counts ?? {});
+        setPagination({
+          page: response.page,
+          pages: response.pages,
+          total: response.total,
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch jobs");
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  const totalJobs = Object.values(stageCounts).reduce((a, b) => a + b, 0);
+  const activeCount = stageCounts["Applied"] ?? 0;
+  const interviewingCount = stageCounts["Interviewing"] ?? 0;
+  const offerCount = stageCounts["Offer"] ?? 0;
 
   useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
+    fetchJobs(1, stageFilter);
+  }, [fetchJobs, stageFilter]);
 
   const handleRefresh = () => {
-    fetchJobs(pagination.page);
+    fetchJobs(pagination.page, stageFilter);
+  };
+
+  const handleStageFilterChange = (next: StageFilter) => {
+    setStageFilter(next);
   };
 
   return (
@@ -50,16 +73,38 @@ export default function Home() {
         <header className="mb-8 flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Jobflow</h1>
-            <p className="text-gray-600 mt-1">
-              Extract and track job postings from any URL
-            </p>
+            {totalJobs > 0 ? (
+              <p className="mt-1 text-sm text-gray-600">
+                <span className="font-medium text-gray-900">{totalJobs}</span>{" "}
+                in pipeline
+                <span className="mx-2 text-gray-300">·</span>
+                <span className="font-medium text-gray-900">{activeCount}</span>{" "}
+                applied
+                <span className="mx-2 text-gray-300">·</span>
+                <span className="font-medium text-gray-900">
+                  {interviewingCount}
+                </span>{" "}
+                interviewing
+                {offerCount > 0 && (
+                  <>
+                    <span className="mx-2 text-gray-300">·</span>
+                    <span className="font-medium text-emerald-700">
+                      {offerCount}
+                    </span>{" "}
+                    {offerCount === 1 ? "offer" : "offers"}
+                  </>
+                )}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-gray-600">
+                Add a job URL to start tracking your pipeline.
+              </p>
+            )}
           </div>
           <UserMenu />
         </header>
 
         <div className="grid gap-6">
-          <JobForm onSuccess={handleRefresh} />
-
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">
               Saved Jobs {pagination.total > 0 && `(${pagination.total})`}
@@ -69,8 +114,18 @@ export default function Home() {
                 Refresh
               </Button>
               <ExportButton disabled={jobs.length === 0} />
+              <Button onClick={() => setAddOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Add jobs
+              </Button>
             </div>
           </div>
+
+          <StageFilterBar
+            value={stageFilter}
+            onChange={handleStageFilterChange}
+            counts={stageCounts}
+          />
 
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
@@ -88,7 +143,7 @@ export default function Home() {
             <div className="flex justify-center gap-2">
               <Button
                 variant="outline"
-                onClick={() => fetchJobs(pagination.page - 1)}
+                onClick={() => fetchJobs(pagination.page - 1, stageFilter)}
                 disabled={pagination.page <= 1 || loading}
               >
                 Previous
@@ -98,7 +153,7 @@ export default function Home() {
               </span>
               <Button
                 variant="outline"
-                onClick={() => fetchJobs(pagination.page + 1)}
+                onClick={() => fetchJobs(pagination.page + 1, stageFilter)}
                 disabled={pagination.page >= pagination.pages || loading}
               >
                 Next
@@ -107,6 +162,31 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      <Sheet open={addOpen} onClose={() => setAddOpen(false)}>
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between border-b border-neutral-200/70 px-8 py-4">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
+              Add jobs
+            </div>
+            <button
+              onClick={() => setAddOpen(false)}
+              className="text-sm text-neutral-500 transition-colors hover:text-neutral-900"
+              aria-label="Close"
+            >
+              Close ✕
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-8">
+            <JobForm
+              onSuccess={() => {
+                handleRefresh();
+                setAddOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }
