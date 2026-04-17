@@ -162,8 +162,8 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
             <TableRow>
               <TableHead>Title</TableHead>
               <TableHead>Company</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Salary</TableHead>
+              <TableHead className="hidden md:table-cell">Location</TableHead>
+              <TableHead className="hidden md:table-cell">Salary</TableHead>
               <TableHead>Stage</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -178,8 +178,8 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
                   {renderCell(job, "title")}
                 </TableCell>
                 <TableCell>{renderCell(job, "company")}</TableCell>
-                <TableCell>{renderCell(job, "location")}</TableCell>
-                <TableCell>{renderCell(job, "salary")}</TableCell>
+                <TableCell className="hidden md:table-cell">{renderCell(job, "location")}</TableCell>
+                <TableCell className="hidden md:table-cell">{renderCell(job, "salary")}</TableCell>
                 <TableCell>
                   <Select
                     value={job.stage}

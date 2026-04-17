@@ -18,7 +18,7 @@ export function JobDetailsSheet({ job, onClose }: JobDetailsSheetProps) {
       {job && (
         <div className="flex h-full flex-col">
           {/* Top bar — sticky, quiet controls */}
-          <div className="flex items-center justify-between border-b border-neutral-200/70 px-8 py-4">
+          <div className="flex items-center justify-between border-b border-neutral-200/70 px-4 py-4 sm:px-8">
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-neutral-500">
               <span>Job Description</span>
               {job.extraction_method && (
@@ -39,9 +39,9 @@ export function JobDetailsSheet({ job, onClose }: JobDetailsSheetProps) {
 
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto">
-            <article className="mx-auto max-w-[62ch] px-8 py-10">
+            <article className="mx-auto max-w-[62ch] px-4 py-6 sm:px-8 sm:py-10">
               {/* Masthead */}
-              <header className="mb-10">
+              <header className="mb-6 sm:mb-10">
                 <div className="mb-3 text-[13px] font-medium tracking-wide text-neutral-500">
                   {job.company}
                   {job.location && (
@@ -52,7 +52,7 @@ export function JobDetailsSheet({ job, onClose }: JobDetailsSheetProps) {
                   )}
                 </div>
                 <h1
-                  className="font-serif text-[2.4rem] leading-[1.08] tracking-tight text-neutral-900"
+                  className="font-serif text-[1.75rem] leading-[1.12] tracking-tight text-neutral-900 sm:text-[2.4rem] sm:leading-[1.08]"
                   style={{ fontFeatureSettings: '"ss01", "ss02"' }}
                 >
                   {job.title}
@@ -91,7 +91,7 @@ export function JobDetailsSheet({ job, onClose }: JobDetailsSheetProps) {
               </header>
 
               {/* Divider */}
-              <div className="mb-10 h-px bg-neutral-200" />
+              <div className="mb-6 h-px bg-neutral-200 sm:mb-10" />
 
               {/* Body */}
               {blocks.length === 0 ? (

@@ -122,11 +122,11 @@ export default function Home() {
         </header>
 
         <div className="grid gap-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-xl font-semibold">
               Saved Jobs {pagination.total > 0 && `(${pagination.total})`}
             </h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <div className="flex rounded-md border bg-white">
                 <button
                   onClick={() => handleViewChange("table")}
@@ -153,11 +153,11 @@ export default function Home() {
                   Board
                 </button>
               </div>
-              <Button variant="outline" onClick={handleRefresh} disabled={loading}>
+              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
                 Refresh
               </Button>
               <ExportButton disabled={jobs.length === 0} />
-              <Button onClick={() => setAddOpen(true)}>
+              <Button size="sm" onClick={() => setAddOpen(true)}>
                 <Plus className="h-4 w-4" />
                 Add jobs
               </Button>
@@ -210,7 +210,7 @@ export default function Home() {
 
       <Sheet open={addOpen} onClose={() => setAddOpen(false)}>
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-neutral-200/70 px-8 py-4">
+          <div className="flex items-center justify-between border-b border-neutral-200/70 px-4 py-4 sm:px-8">
             <div className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">
               Add jobs
             </div>
@@ -222,7 +222,7 @@ export default function Home() {
               Close ✕
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-8">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-8">
             <JobForm
               onSuccess={() => {
                 handleRefresh();
