@@ -3,18 +3,23 @@
 import { useEffect, useState, useCallback } from "react";
 import { JobForm } from "@/components/JobForm";
 import { JobsTable } from "@/components/JobsTable";
+import { KanbanBoard } from "@/components/KanbanBoard";
 import { ExportButton } from "@/components/ExportButton";
 import { UserMenu } from "@/components/UserMenu";
 import { StageFilterBar, StageFilter } from "@/components/StageFilter";
 import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, List, Kanban } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { listJobs, Job, JobListResponse } from "@/lib/api";
+
+type View = "table" | "board";
 
 export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<View>("table");
   const [stageFilter, setStageFilter] = useState<StageFilter>(null);
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
   const [addOpen, setAddOpen] = useState(false);
@@ -25,13 +30,17 @@ export default function Home() {
   });
 
   const fetchJobs = useCallback(
-    async (page = 1, stage: StageFilter = null) => {
+    async (
+      page = 1,
+      stage: StageFilter = null,
+      perPage = 20
+    ) => {
       setLoading(true);
       setError(null);
       try {
         const response: JobListResponse = await listJobs(
           page,
-          20,
+          perPage,
           stage ? { stage } : undefined
         );
         setJobs(response.jobs);
@@ -55,16 +64,24 @@ export default function Home() {
   const interviewingCount = stageCounts["Interviewing"] ?? 0;
   const offerCount = stageCounts["Offer"] ?? 0;
 
+  const isBoard = view === "board";
+  const perPage = isBoard ? 100 : 20;
+
   useEffect(() => {
-    fetchJobs(1, stageFilter);
-  }, [fetchJobs, stageFilter]);
+    fetchJobs(1, isBoard ? null : stageFilter, perPage);
+  }, [fetchJobs, stageFilter, isBoard, perPage]);
 
   const handleRefresh = () => {
-    fetchJobs(pagination.page, stageFilter);
+    fetchJobs(isBoard ? 1 : pagination.page, isBoard ? null : stageFilter, perPage);
   };
 
   const handleStageFilterChange = (next: StageFilter) => {
     setStageFilter(next);
+  };
+
+  const handleViewChange = (next: View) => {
+    setView(next);
+    if (next === "board") setStageFilter(null);
   };
 
   return (
@@ -110,6 +127,32 @@ export default function Home() {
               Saved Jobs {pagination.total > 0 && `(${pagination.total})`}
             </h2>
             <div className="flex gap-2">
+              <div className="flex rounded-md border bg-white">
+                <button
+                  onClick={() => handleViewChange("table")}
+                  className={cn(
+                    "flex items-center gap-1 rounded-l-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+                    view === "table"
+                      ? "bg-neutral-900 text-white"
+                      : "text-neutral-500 hover:text-neutral-900"
+                  )}
+                >
+                  <List className="h-3.5 w-3.5" />
+                  Table
+                </button>
+                <button
+                  onClick={() => handleViewChange("board")}
+                  className={cn(
+                    "flex items-center gap-1 rounded-r-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+                    view === "board"
+                      ? "bg-neutral-900 text-white"
+                      : "text-neutral-500 hover:text-neutral-900"
+                  )}
+                >
+                  <Kanban className="h-3.5 w-3.5" />
+                  Board
+                </button>
+              </div>
               <Button variant="outline" onClick={handleRefresh} disabled={loading}>
                 Refresh
               </Button>
@@ -121,12 +164,6 @@ export default function Home() {
             </div>
           </div>
 
-          <StageFilterBar
-            value={stageFilter}
-            onChange={handleStageFilterChange}
-            counts={stageCounts}
-          />
-
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
               {error}
@@ -135,30 +172,38 @@ export default function Home() {
 
           {loading && jobs.length === 0 ? (
             <div className="text-center py-8 text-gray-500">Loading...</div>
+          ) : isBoard ? (
+            <KanbanBoard jobs={jobs} onRefresh={handleRefresh} />
           ) : (
-            <JobsTable jobs={jobs} onRefresh={handleRefresh} />
-          )}
-
-          {pagination.pages > 1 && (
-            <div className="flex justify-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => fetchJobs(pagination.page - 1, stageFilter)}
-                disabled={pagination.page <= 1 || loading}
-              >
-                Previous
-              </Button>
-              <span className="flex items-center px-4 text-sm text-gray-600">
-                Page {pagination.page} of {pagination.pages}
-              </span>
-              <Button
-                variant="outline"
-                onClick={() => fetchJobs(pagination.page + 1, stageFilter)}
-                disabled={pagination.page >= pagination.pages || loading}
-              >
-                Next
-              </Button>
-            </div>
+            <>
+              <StageFilterBar
+                value={stageFilter}
+                onChange={handleStageFilterChange}
+                counts={stageCounts}
+              />
+              <JobsTable jobs={jobs} onRefresh={handleRefresh} />
+              {pagination.pages > 1 && (
+                <div className="flex justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchJobs(pagination.page - 1, stageFilter, perPage)}
+                    disabled={pagination.page <= 1 || loading}
+                  >
+                    Previous
+                  </Button>
+                  <span className="flex items-center px-4 text-sm text-gray-600">
+                    Page {pagination.page} of {pagination.pages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchJobs(pagination.page + 1, stageFilter, perPage)}
+                    disabled={pagination.page >= pagination.pages || loading}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
