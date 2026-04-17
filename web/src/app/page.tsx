@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { JobForm } from "@/components/JobForm";
 import { JobsTable } from "@/components/JobsTable";
+import { JobCardList } from "@/components/JobCardList";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { ExportButton } from "@/components/ExportButton";
 import { UserMenu } from "@/components/UserMenu";
@@ -181,7 +182,12 @@ export default function Home() {
                 onChange={handleStageFilterChange}
                 counts={stageCounts}
               />
-              <JobsTable jobs={jobs} onRefresh={handleRefresh} />
+              <div className="hidden md:block">
+                <JobsTable jobs={jobs} onRefresh={handleRefresh} />
+              </div>
+              <div className="md:hidden">
+                <JobCardList jobs={jobs} onRefresh={handleRefresh} />
+              </div>
               {pagination.pages > 1 && (
                 <div className="flex justify-center gap-2">
                   <Button
