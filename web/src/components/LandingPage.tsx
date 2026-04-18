@@ -4,14 +4,14 @@ import Link from "next/link";
 
 const FEATURES = [
   {
-    title: "Extract",
+    title: "Save",
     description:
-      "Paste any job URL. Jobflow pulls the title, company, salary, and full description automatically.",
+      "Add a job URL and Jobflow tries to extract the posting. If the site blocks access, paste the description yourself — either way, it's saved.",
   },
   {
     title: "Read",
     description:
-      "Descriptions are formatted with proper headings, bullets, and spacing — not a wall of scraped text.",
+      "Descriptions are formatted with proper headings, bullets, and spacing so you can actually read them when you need to.",
   },
   {
     title: "Track",
@@ -43,8 +43,8 @@ export function LandingPage() {
           Never lose track of a job&nbsp;description&nbsp;again.
         </h1>
         <p className="mx-auto mt-6 max-w-[48ch] text-lg leading-relaxed text-neutral-600 sm:text-xl">
-          Paste a job URL. Jobflow extracts and saves the full posting so you
-          can review it before your interview — even weeks later.
+          Save job postings as you apply. When you get the interview weeks
+          later, the description is right where you left it.
         </p>
         <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Link
