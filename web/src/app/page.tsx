@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSession } from "@/lib/auth-client";
+import { LandingPage } from "@/components/LandingPage";
 import { JobForm } from "@/components/JobForm";
 import { JobsTable } from "@/components/JobsTable";
 import { JobCardList } from "@/components/JobCardList";
@@ -17,6 +19,24 @@ import { listJobs, Job, JobListResponse } from "@/lib/api";
 type View = "table" | "board";
 
 export default function Home() {
+  const { data: session, isPending } = useSession();
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-[#fbfaf7] flex items-center justify-center">
+        <div className="text-neutral-400 text-sm">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!session?.user) {
+    return <LandingPage />;
+  }
+
+  return <Dashboard />;
+}
+
+function Dashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
