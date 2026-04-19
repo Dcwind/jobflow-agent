@@ -1,16 +1,48 @@
 "use client";
 
+import { useState } from "react";
 import { Sheet } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { parseDescription } from "@/lib/parseDescription";
-import { Job } from "@/lib/api";
+import { Job, updateJob } from "@/lib/api";
+
+const STAGE_OPTIONS = [
+  "Backlog",
+  "Applied",
+  "Interviewing",
+  "Offer",
+  "Rejected",
+  "Archived",
+] as const;
 
 interface JobDetailsSheetProps {
   job: Job | null;
   onClose: () => void;
+  onRefresh?: () => void;
 }
 
-export function JobDetailsSheet({ job, onClose }: JobDetailsSheetProps) {
+export function JobDetailsSheet({ job, onClose, onRefresh }: JobDetailsSheetProps) {
+  const [updating, setUpdating] = useState(false);
+
+  const handleStageChange = async (newStage: string) => {
+    if (!job || newStage === job.stage) return;
+    setUpdating(true);
+    try {
+      await updateJob(job.id, { stage: newStage });
+      onRefresh?.();
+    } catch (err) {
+      console.error("Failed to update stage:", err);
+    } finally {
+      setUpdating(false);
+    }
+  };
   const blocks = job?.description ? parseDescription(job.description) : [];
 
   return (
@@ -64,9 +96,22 @@ export function JobDetailsSheet({ job, onClose }: JobDetailsSheetProps) {
                       {job.salary}
                     </span>
                   )}
-                  <Badge variant="outline" className="rounded-full text-xs font-medium">
-                    {job.stage}
-                  </Badge>
+                  <Select
+                    value={job.stage}
+                    onValueChange={handleStageChange}
+                    disabled={updating}
+                  >
+                    <SelectTrigger className="h-7 w-[130px] rounded-full text-xs font-medium">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STAGE_OPTIONS.map((stage) => (
+                        <SelectItem key={stage} value={stage}>
+                          {stage}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {job.flagged && (
                     <Badge
                       variant="outline"
