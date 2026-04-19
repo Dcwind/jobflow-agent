@@ -100,6 +100,7 @@ export function KanbanBoard({ jobs, onRefresh }: KanbanBoardProps) {
       <JobDetailsSheet
         job={selectedJob}
         onClose={() => setSelectedJob(null)}
+        onRefresh={onRefresh}
       />
     </>
   );

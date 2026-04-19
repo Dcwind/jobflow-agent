@@ -19,7 +19,7 @@ const STAGE_COLORS: Record<string, string> = {
   Archived: "bg-neutral-100 text-neutral-500",
 };
 
-export function JobCardList({ jobs }: JobCardListProps) {
+export function JobCardList({ jobs, onRefresh }: JobCardListProps) {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   if (jobs.length === 0) {
@@ -65,6 +65,7 @@ export function JobCardList({ jobs }: JobCardListProps) {
       <JobDetailsSheet
         job={selectedJob}
         onClose={() => setSelectedJob(null)}
+        onRefresh={onRefresh}
       />
     </>
   );

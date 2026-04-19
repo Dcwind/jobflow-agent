@@ -247,6 +247,7 @@ export function JobsTable({ jobs, onRefresh }: JobsTableProps) {
       <JobDetailsSheet
         job={selectedJob}
         onClose={() => setSelectedJob(null)}
+        onRefresh={onRefresh}
       />
     </>
   );
