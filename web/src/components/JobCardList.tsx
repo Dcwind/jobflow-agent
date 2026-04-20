@@ -2,13 +2,29 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { JobDetailsSheet } from "@/components/JobDetailsSheet";
-import { Job } from "@/lib/api";
+import { Job, updateJob } from "@/lib/api";
 
 interface JobCardListProps {
   jobs: Job[];
   onRefresh?: () => void;
 }
+
+const STAGE_OPTIONS = [
+  "Backlog",
+  "Applied",
+  "Interviewing",
+  "Offer",
+  "Rejected",
+  "Archived",
+] as const;
 
 const STAGE_COLORS: Record<string, string> = {
   Backlog: "bg-neutral-100 text-neutral-600",
@@ -21,6 +37,20 @@ const STAGE_COLORS: Record<string, string> = {
 
 export function JobCardList({ jobs, onRefresh }: JobCardListProps) {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [updating, setUpdating] = useState<number | null>(null);
+
+  const handleStageChange = async (job: Job, newStage: string) => {
+    if (newStage === job.stage) return;
+    setUpdating(job.id);
+    try {
+      await updateJob(job.id, { stage: newStage });
+      onRefresh?.();
+    } catch (err) {
+      console.error("Failed to update stage:", err);
+    } finally {
+      setUpdating(null);
+    }
+  };
 
   if (jobs.length === 0) {
     return (
@@ -34,12 +64,11 @@ export function JobCardList({ jobs, onRefresh }: JobCardListProps) {
     <>
       <div className="flex flex-col gap-2">
         {jobs.map((job) => (
-          <button
+          <div
             key={job.id}
-            type="button"
             onClick={() => setSelectedJob(job)}
             className={cn(
-              "w-full rounded-lg border bg-white px-4 py-3 text-left transition-colors active:bg-neutral-50",
+              "w-full rounded-lg border bg-white px-4 py-3 text-left transition-colors active:bg-neutral-50 cursor-pointer",
               job.flagged && "border-l-2 border-l-amber-400"
             )}
           >
@@ -50,16 +79,34 @@ export function JobCardList({ jobs, onRefresh }: JobCardListProps) {
               <span className="text-xs text-neutral-500 truncate">
                 {job.company}
               </span>
-              <span
-                className={cn(
-                  "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                  STAGE_COLORS[job.stage] ?? STAGE_COLORS.Backlog
-                )}
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="shrink-0 ml-auto"
               >
-                {job.stage}
-              </span>
+                <Select
+                  value={job.stage}
+                  onValueChange={(v) => handleStageChange(job, v)}
+                  disabled={updating === job.id}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      "h-6 gap-1 rounded-full border-0 px-2.5 text-[10px] font-medium shadow-none",
+                      STAGE_COLORS[job.stage] ?? STAGE_COLORS.Backlog
+                    )}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STAGE_OPTIONS.map((stage) => (
+                      <SelectItem key={stage} value={stage}>
+                        {stage}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </button>
+          </div>
         ))}
       </div>
       <JobDetailsSheet
