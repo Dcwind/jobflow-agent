@@ -87,6 +87,10 @@ def _extract_with_llm(html: str) -> ExtractionResult | None:
 
         return extract_with_llm(html)
     except Exception as e:
+        from shared.extraction.llm_extractor import RateLimitError
+
+        if isinstance(e, RateLimitError):
+            raise  # Let rate limits propagate to the caller
         LOGGER.warning("LLM extraction failed: %s", e)
         return None
 

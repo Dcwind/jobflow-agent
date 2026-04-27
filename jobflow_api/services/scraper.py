@@ -60,6 +60,11 @@ def scrape_and_store_job(
             check_robots=check_robots,
         )
     except Exception as e:
+        from shared.extraction.llm_extractor import RateLimitError
+
+        if isinstance(e, RateLimitError):
+            LOGGER.warning("Rate limit during extraction for %s: %s", url_str, e)
+            return None, "rate_limit: AI extraction limit reached. Add your own Gemini API key in Settings to continue."
         LOGGER.error("Extraction failed for %s: %s", url_str, e)
         return None, f"Extraction failed: {e}"
 
@@ -215,7 +220,7 @@ JSON:"""
         error_str = str(e).lower()
         if "429" in error_str or "rate limit" in error_str or "resource exhausted" in error_str or "quota" in error_str:
             LOGGER.warning("LLM rate limit exceeded: %s", e)
-            raise LLMServiceError("Rate limit exceeded. Try again later.", status_code=429) from e
+            raise LLMServiceError("AI extraction limit reached. Add your own Gemini API key in Settings to continue.", status_code=429) from e
         LOGGER.warning("LLM parsing failed: %s", e)
         raise LLMServiceError(f"Extraction failed: {e}", status_code=500) from e
 

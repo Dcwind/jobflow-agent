@@ -108,8 +108,16 @@ def extract_with_llm(html: str, model_name: str = "gemini-2.5-flash-lite") -> Ex
         LOGGER.error("Failed to parse LLM response as JSON: %s", e)
         raise RuntimeError(f"LLM returned invalid JSON: {e}") from e
     except Exception as e:
+        error_str = str(e).lower()
+        if "429" in error_str or "rate limit" in error_str or "resource exhausted" in error_str or "quota" in error_str:
+            LOGGER.warning("LLM rate limit during extraction: %s", e)
+            raise RateLimitError(str(e)) from e
         LOGGER.error("LLM extraction failed: %s", e)
         raise RuntimeError(f"LLM extraction failed: {e}") from e
 
 
-__all__ = ["extract_with_llm"]
+class RateLimitError(RuntimeError):
+    """Raised when a Gemini API rate limit or quota is exceeded."""
+
+
+__all__ = ["extract_with_llm", "RateLimitError"]
