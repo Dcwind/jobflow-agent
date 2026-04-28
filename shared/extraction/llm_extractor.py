@@ -34,21 +34,25 @@ HTML Content:
 JSON Response:"""
 
 
-def _get_genai_client() -> Any:
+def _get_genai_client(api_key: str | None = None) -> Any:
     """Get the Google Generative AI client."""
     try:
         from google import genai
 
-        api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
-        if not api_key:
+        key = api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        if not key:
             raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set")
 
-        return genai.Client(api_key=api_key)
+        return genai.Client(api_key=key)
     except ImportError as e:
         raise ImportError("google-genai package not installed") from e
 
 
-def extract_with_llm(html: str, model_name: str = "gemini-2.5-flash-lite") -> ExtractionResult:
+def extract_with_llm(
+    html: str,
+    model_name: str = "gemini-2.5-flash-lite",
+    api_key: str | None = None,
+) -> ExtractionResult:
     """Extract job fields using LLM.
 
     Args:
@@ -68,7 +72,7 @@ def extract_with_llm(html: str, model_name: str = "gemini-2.5-flash-lite") -> Ex
         html = html[:max_html_len]
 
     try:
-        client = _get_genai_client()
+        client = _get_genai_client(api_key)
 
         prompt = EXTRACTION_PROMPT.format(html=html)
         response = client.models.generate_content(model=model_name, contents=prompt)
@@ -108,8 +112,16 @@ def extract_with_llm(html: str, model_name: str = "gemini-2.5-flash-lite") -> Ex
         LOGGER.error("Failed to parse LLM response as JSON: %s", e)
         raise RuntimeError(f"LLM returned invalid JSON: {e}") from e
     except Exception as e:
+        error_str = str(e).lower()
+        if "429" in error_str or "rate limit" in error_str or "resource exhausted" in error_str or "quota" in error_str:
+            LOGGER.warning("LLM rate limit during extraction: %s", e)
+            raise RateLimitError(str(e)) from e
         LOGGER.error("LLM extraction failed: %s", e)
         raise RuntimeError(f"LLM extraction failed: {e}") from e
 
 
-__all__ = ["extract_with_llm"]
+class RateLimitError(RuntimeError):
+    """Raised when a Gemini API rate limit or quota is exceeded."""
+
+
+__all__ = ["extract_with_llm", "RateLimitError"]

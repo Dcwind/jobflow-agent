@@ -160,9 +160,9 @@ export function JobForm({ onSuccess }: JobFormProps) {
       // Handle specific error codes with user-friendly messages
       const message = err instanceof Error ? err.message : String(err);
       if (message.includes("503") || message.includes("not configured")) {
-        setError("LLM extraction unavailable. Please enter fields manually.");
-      } else if (message.includes("429") || message.includes("rate") || message.includes("Rate")) {
-        setError("Rate limit exceeded. Please try again later or enter fields manually.");
+        setError("AI extraction unavailable. Please enter fields manually.");
+      } else if (message.includes("429") || message.includes("rate") || message.includes("Rate") || message.includes("limit")) {
+        setError("AI extraction limit reached. You can add your own Gemini API key in Settings, or enter fields manually.");
       } else {
         setError("Extraction failed. Please enter fields manually.");
       }

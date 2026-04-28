@@ -13,6 +13,15 @@ class Base(DeclarativeBase):
     pass
 
 
+class UserSettings(Base):
+    """Per-user settings, e.g. BYOK API keys."""
+
+    __tablename__ = "user_settings"
+
+    user_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    gemini_api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
 class Job(Base):
     """Job posting record."""
 

@@ -17,7 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from jobflow_api.config import get_settings
-from jobflow_api.routers import health, jobs
+from jobflow_api.routers import health, jobs, user_settings
 
 # Configure logging
 logging.basicConfig(
@@ -73,6 +73,7 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(health.router)
     app.include_router(jobs.router)
+    app.include_router(user_settings.router)
 
     return app
 

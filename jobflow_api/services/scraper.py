@@ -26,6 +26,7 @@ def scrape_and_store_job(
     use_llm_fallback: bool = True,
     use_llm_validation: bool = False,
     check_robots: bool = True,
+    gemini_api_key: str | None = None,
 ) -> tuple[Job | None, str | None]:
     """Scrape a job URL and store in database.
 
@@ -58,8 +59,14 @@ def scrape_and_store_job(
             use_llm_fallback=use_llm_fallback,
             use_llm_validation=use_llm_validation,
             check_robots=check_robots,
+            gemini_api_key=gemini_api_key,
         )
     except Exception as e:
+        from shared.extraction.llm_extractor import RateLimitError
+
+        if isinstance(e, RateLimitError):
+            LOGGER.warning("Rate limit during extraction for %s: %s", url_str, e)
+            return None, "rate_limit: AI extraction limit reached. Add your own Gemini API key in Settings to continue."
         LOGGER.error("Extraction failed for %s: %s", url_str, e)
         return None, f"Extraction failed: {e}"
 
@@ -106,6 +113,7 @@ def scrape_multiple_jobs(
     use_llm_fallback: bool = True,
     use_llm_validation: bool = False,
     check_robots: bool = True,
+    gemini_api_key: str | None = None,
 ) -> list[tuple[str, Job | None, str | None]]:
     """Scrape multiple job URLs.
 
@@ -132,6 +140,7 @@ def scrape_multiple_jobs(
             use_llm_fallback=use_llm_fallback,
             use_llm_validation=use_llm_validation,
             check_robots=check_robots,
+            gemini_api_key=gemini_api_key,
         )
         results.append((url_str, job, error))
     return results
@@ -145,7 +154,7 @@ class LLMServiceError(Exception):
         self.status_code = status_code
 
 
-def parse_job_from_text(text: str) -> dict[str, str | None]:
+def parse_job_from_text(text: str, gemini_api_key: str | None = None) -> dict[str, str | None]:
     """Extract job fields from description text using LLM.
 
     Args:
@@ -162,7 +171,7 @@ def parse_job_from_text(text: str) -> dict[str, str | None]:
 
     LOGGER.info("Parsing job fields from text (%d chars)", len(text))
 
-    api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+    api_key = gemini_api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
     if not api_key:
         LOGGER.warning("No API key for LLM parsing")
         raise LLMServiceError("LLM service not configured", status_code=503)
@@ -215,7 +224,7 @@ JSON:"""
         error_str = str(e).lower()
         if "429" in error_str or "rate limit" in error_str or "resource exhausted" in error_str or "quota" in error_str:
             LOGGER.warning("LLM rate limit exceeded: %s", e)
-            raise LLMServiceError("Rate limit exceeded. Try again later.", status_code=429) from e
+            raise LLMServiceError("AI extraction limit reached. Add your own Gemini API key in Settings to continue.", status_code=429) from e
         LOGGER.warning("LLM parsing failed: %s", e)
         raise LLMServiceError(f"Extraction failed: {e}", status_code=500) from e
 

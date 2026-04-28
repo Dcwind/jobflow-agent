@@ -80,13 +80,17 @@ def _fetch_with_playwright(url: str) -> str | None:
         return None
 
 
-def _extract_with_llm(html: str) -> ExtractionResult | None:
+def _extract_with_llm(html: str, api_key: str | None = None) -> ExtractionResult | None:
     """Extract using LLM as fallback."""
     try:
         from shared.extraction.llm_extractor import extract_with_llm
 
-        return extract_with_llm(html)
+        return extract_with_llm(html, api_key=api_key)
     except Exception as e:
+        from shared.extraction.llm_extractor import RateLimitError
+
+        if isinstance(e, RateLimitError):
+            raise  # Let rate limits propagate to the caller
         LOGGER.warning("LLM extraction failed: %s", e)
         return None
 
@@ -114,6 +118,7 @@ def extract_job(
     use_llm_validation: bool = True,
     apply_pii_filter: bool = True,
     check_robots: bool = True,
+    gemini_api_key: str | None = None,
 ) -> tuple[ExtractionResult | None, ExtractionMetrics]:
     """Extract job fields from URL using fallback chain.
 
@@ -202,7 +207,7 @@ def extract_job(
     if use_llm_fallback and html and (not result or not result.is_complete()):
         LOGGER.info("Trying LLM extraction fallback")
         metrics.fallbacks_used += 1
-        llm_result = _extract_with_llm(html)
+        llm_result = _extract_with_llm(html, api_key=gemini_api_key)
 
         if llm_result and llm_result.is_complete():
             result = llm_result
