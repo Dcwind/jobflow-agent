@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, deleteUser } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -16,7 +17,61 @@ import { useRouter } from "next/navigation";
 export default function AccountPage() {
   const { data: session, isPending } = useSession();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [hasGeminiKey, setHasGeminiKey] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState("");
+  const [keySaving, setKeySaving] = useState(false);
+  const [keyMessage, setKeyMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => setHasGeminiKey(data.has_gemini_key ?? false))
+      .catch(() => {});
+  }, []);
+
+  const handleSaveKey = async () => {
+    if (!apiKeyInput.trim()) return;
+    setKeySaving(true);
+    setKeyMessage(null);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gemini_api_key: apiKeyInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setKeyMessage({ type: "error", text: data.detail || "Failed to save key" });
+        return;
+      }
+      setHasGeminiKey(true);
+      setApiKeyInput("");
+      setKeyMessage({ type: "success", text: "API key saved and verified." });
+    } catch {
+      setKeyMessage({ type: "error", text: "Failed to save key" });
+    } finally {
+      setKeySaving(false);
+    }
+  };
+
+  const handleRemoveKey = async () => {
+    setKeySaving(true);
+    setKeyMessage(null);
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gemini_api_key: null }),
+      });
+      setHasGeminiKey(false);
+      setKeyMessage({ type: "success", text: "API key removed." });
+    } catch {
+      setKeyMessage({ type: "error", text: "Failed to remove key" });
+    } finally {
+      setKeySaving(false);
+    }
+  };
 
   if (isPending) {
     return (
@@ -97,6 +152,67 @@ export default function AccountPage() {
             <Link href="/">
               <Button variant="outline">Go to Dashboard</Button>
             </Link>
+          </CardContent>
+        </Card>
+
+        {/* API Key */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Gemini API Key</CardTitle>
+            <CardDescription>
+              Bring your own key to use AI-powered extraction without limits.
+              Your key is encrypted at rest and never shared.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {hasGeminiKey ? (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-green-700">
+                  Key saved — AI extraction uses your key.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRemoveKey}
+                  disabled={keySaving}
+                >
+                  {keySaving ? "Removing..." : "Remove key"}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  type="password"
+                  placeholder="AIzaSy..."
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  disabled={keySaving}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleSaveKey}
+                  disabled={keySaving || !apiKeyInput.trim()}
+                >
+                  {keySaving ? "Verifying..." : "Save key"}
+                </Button>
+              </div>
+            )}
+            {keyMessage && (
+              <p className={`text-sm ${keyMessage.type === "error" ? "text-red-600" : "text-green-600"}`}>
+                {keyMessage.text}
+              </p>
+            )}
+            <p className="text-xs text-gray-500">
+              Get a free API key from{" "}
+              <a
+                href="https://aistudio.google.com/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                Google AI Studio
+              </a>
+            </p>
           </CardContent>
         </Card>
 

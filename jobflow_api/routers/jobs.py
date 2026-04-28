@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from jobflow_api.config import get_settings
 from jobflow_api.dependencies import UserInfo, require_auth, verify_api_key
+from jobflow_api.routers.user_settings import get_user_gemini_key
 from jobflow_api.schemas.job import (
     JobCreateRequest,
     JobCreateResponse,
@@ -42,6 +43,7 @@ def create_jobs(
 ) -> JobCreateResponse:
     """Scrape and store jobs from URLs."""
     settings = get_settings()
+    user_key = get_user_gemini_key(db, user["id"])
     results = scrape_multiple_jobs(
         db,
         request.urls,
@@ -50,6 +52,7 @@ def create_jobs(
         use_llm_fallback=settings.use_llm_fallback,
         use_llm_validation=settings.use_llm_validation,
         check_robots=settings.check_robots,
+        gemini_api_key=user_key,
     )
 
     create_results = []
@@ -103,13 +106,18 @@ def create_job_manual(
 
 
 @router.post("/parse", response_model=JobParseResponse, dependencies=[Depends(verify_api_key)])
-def parse_job_description(request: JobParseRequest) -> JobParseResponse:
+def parse_job_description(
+    request: JobParseRequest,
+    user: UserInfo = Depends(require_auth),
+    db: Session = Depends(get_db),
+) -> JobParseResponse:
     """Extract job fields from description text using LLM."""
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Text is required")
 
+    user_key = get_user_gemini_key(db, user["id"])
     try:
-        fields = parse_job_from_text(request.text)
+        fields = parse_job_from_text(request.text, gemini_api_key=user_key)
         return JobParseResponse(**fields)
     except LLMServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=str(e)) from None

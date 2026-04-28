@@ -26,6 +26,7 @@ def scrape_and_store_job(
     use_llm_fallback: bool = True,
     use_llm_validation: bool = False,
     check_robots: bool = True,
+    gemini_api_key: str | None = None,
 ) -> tuple[Job | None, str | None]:
     """Scrape a job URL and store in database.
 
@@ -58,6 +59,7 @@ def scrape_and_store_job(
             use_llm_fallback=use_llm_fallback,
             use_llm_validation=use_llm_validation,
             check_robots=check_robots,
+            gemini_api_key=gemini_api_key,
         )
     except Exception as e:
         from shared.extraction.llm_extractor import RateLimitError
@@ -111,6 +113,7 @@ def scrape_multiple_jobs(
     use_llm_fallback: bool = True,
     use_llm_validation: bool = False,
     check_robots: bool = True,
+    gemini_api_key: str | None = None,
 ) -> list[tuple[str, Job | None, str | None]]:
     """Scrape multiple job URLs.
 
@@ -137,6 +140,7 @@ def scrape_multiple_jobs(
             use_llm_fallback=use_llm_fallback,
             use_llm_validation=use_llm_validation,
             check_robots=check_robots,
+            gemini_api_key=gemini_api_key,
         )
         results.append((url_str, job, error))
     return results
@@ -150,7 +154,7 @@ class LLMServiceError(Exception):
         self.status_code = status_code
 
 
-def parse_job_from_text(text: str) -> dict[str, str | None]:
+def parse_job_from_text(text: str, gemini_api_key: str | None = None) -> dict[str, str | None]:
     """Extract job fields from description text using LLM.
 
     Args:
@@ -167,7 +171,7 @@ def parse_job_from_text(text: str) -> dict[str, str | None]:
 
     LOGGER.info("Parsing job fields from text (%d chars)", len(text))
 
-    api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+    api_key = gemini_api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
     if not api_key:
         LOGGER.warning("No API key for LLM parsing")
         raise LLMServiceError("LLM service not configured", status_code=503)
