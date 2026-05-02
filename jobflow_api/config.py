@@ -29,6 +29,8 @@ class Settings(BaseSettings):
 
     # Rate limiting
     rate_limit_per_minute: int = 30
+    rate_limit_extraction_per_minute: int = 10
+    rate_limit_llm_per_minute: int = 10
 
     # Database
     database_url: str = "sqlite:///./data/jobs.db"

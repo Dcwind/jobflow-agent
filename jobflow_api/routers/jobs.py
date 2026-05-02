@@ -4,9 +4,11 @@ import csv
 import io
 from math import ceil
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from shared.db.models import Job
 from shared.db.session import get_db
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -32,12 +34,15 @@ from jobflow_api.services.scraper import (
     scrape_multiple_jobs,
 )
 
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
 @router.post("", response_model=JobCreateResponse, dependencies=[Depends(verify_api_key)])
+@limiter.limit(lambda: f"{get_settings().rate_limit_extraction_per_minute}/minute")
 def create_jobs(
-    request: JobCreateRequest,
+    request: Request,
+    body: JobCreateRequest,
     user: UserInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ) -> JobCreateResponse:
@@ -46,7 +51,7 @@ def create_jobs(
     user_key = get_user_gemini_key(db, user["id"])
     results = scrape_multiple_jobs(
         db,
-        request.urls,
+        body.urls,
         user["id"],
         use_playwright=settings.use_playwright,
         use_llm_fallback=settings.use_llm_fallback,
@@ -84,21 +89,23 @@ def create_jobs(
 
 
 @router.post("/manual", response_model=JobResponse, dependencies=[Depends(verify_api_key)])
+@limiter.limit(lambda: f"{get_settings().rate_limit_extraction_per_minute}/minute")
 def create_job_manual(
-    request: JobManualCreateRequest,
+    request: Request,
+    body: JobManualCreateRequest,
     user: UserInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ) -> JobResponse:
     """Create a job from manual entry (for sites that block scraping)."""
     job, error = create_manual_job(
         db,
-        request.title,
-        request.company,
+        body.title,
+        body.company,
         user["id"],
-        location=request.location,
-        salary=request.salary,
-        description=request.description,
-        url=request.url,
+        location=body.location,
+        salary=body.salary,
+        description=body.description,
+        url=body.url,
     )
     if error:
         raise HTTPException(status_code=400, detail=error)
@@ -106,18 +113,20 @@ def create_job_manual(
 
 
 @router.post("/parse", response_model=JobParseResponse, dependencies=[Depends(verify_api_key)])
+@limiter.limit(lambda: f"{get_settings().rate_limit_llm_per_minute}/minute")
 def parse_job_description(
-    request: JobParseRequest,
+    request: Request,
+    body: JobParseRequest,
     user: UserInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ) -> JobParseResponse:
     """Extract job fields from description text using LLM."""
-    if not request.text.strip():
+    if not body.text.strip():
         raise HTTPException(status_code=400, detail="Text is required")
 
     user_key = get_user_gemini_key(db, user["id"])
     try:
-        fields = parse_job_from_text(request.text, gemini_api_key=user_key)
+        fields = parse_job_from_text(body.text, gemini_api_key=user_key)
         return JobParseResponse(**fields)
     except LLMServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=str(e)) from None

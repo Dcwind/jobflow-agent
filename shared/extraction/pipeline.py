@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import ipaddress
 import logging
+import socket
 from dataclasses import dataclass
 from typing import Literal
 from urllib.parse import urlparse
@@ -36,19 +38,51 @@ class ExtractionMetrics:
     fallbacks_used: int
 
 
+def _is_private_ip(ip_str: str) -> bool:
+    """Check if an IP address is private, loopback, or otherwise unsafe."""
+    try:
+        addr = ipaddress.ip_address(ip_str)
+        return (
+            addr.is_private
+            or addr.is_loopback
+            or addr.is_link_local
+            or addr.is_reserved
+            or addr.is_multicast
+            or addr.is_unspecified
+        )
+    except ValueError:
+        return False
+
+
 def _is_valid_url(url: str) -> bool:
-    """Check if URL is valid and safe to fetch."""
+    """Check if URL is valid and safe to fetch (SSRF prevention)."""
     try:
         parsed = urlparse(url)
-        # Must have scheme and netloc
         if not parsed.scheme or not parsed.netloc:
             return False
-        # Only allow http/https
         if parsed.scheme not in ("http", "https"):
             return False
-        # Block internal/private IPs
-        blocked_hosts = ["localhost", "127.0.0.1", "0.0.0.0", "::1"]
-        return parsed.hostname not in blocked_hosts
+
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+
+        # Block known dangerous hostnames
+        if hostname in ("localhost", "metadata.google.internal"):
+            return False
+
+        # Resolve hostname and check all resulting IPs
+        try:
+            addrinfo = socket.getaddrinfo(hostname, None)
+        except socket.gaierror:
+            return False
+
+        for _family, _type, _proto, _canonname, sockaddr in addrinfo:
+            ip_str = sockaddr[0]
+            if _is_private_ip(ip_str):
+                return False
+
+        return True
     except Exception:
         return False
 
