@@ -70,15 +70,23 @@ def require_auth(user: UserInfo | None = Depends(get_current_user)) -> UserInfo:
     return user
 
 
-def verify_api_key(x_api_key: str | None = Header(None)) -> None:
+def verify_api_key(
+    x_api_key: str | None = Header(None),
+    authorization: str | None = Header(None, alias="Authorization"),
+) -> None:
     """Verify the API key for protected endpoints.
 
     If API_KEY is not configured, all requests are allowed (dev mode).
-    If configured, requests must include matching X-API-Key header.
+    If configured, requests must include matching X-API-Key header
+    or a valid Bearer token (for direct API clients like the Chrome extension).
     """
     settings = get_settings()
 
     if settings.api_key is None:
+        return
+
+    # Authenticated users (e.g. Chrome extension) bypass API key check
+    if authorization and authorization.startswith("Bearer "):
         return
 
     if x_api_key is None or x_api_key != settings.api_key:

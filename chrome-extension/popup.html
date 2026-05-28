@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Jobflow</h1>
+    </header>
+
+    <!-- Loading state -->
+    <div id="loading" class="state">
+      <p class="muted">Loading...</p>
+    </div>
+
+    <!-- Signed out state -->
+    <div id="signed-out" class="state hidden">
+      <p class="muted">Sign in to save jobs</p>
+      <button id="btn-google" class="btn btn-primary">
+        Sign in with Google
+      </button>
+      <button id="btn-github" class="btn btn-secondary">
+        Sign in with GitHub
+      </button>
+    </div>
+
+    <!-- Signed in state -->
+    <div id="signed-in" class="state hidden">
+      <p class="user-info">
+        <span id="user-name"></span>
+        <span id="user-email" class="muted"></span>
+      </p>
+      <button id="btn-save" class="btn btn-primary">
+        Save to Jobflow
+      </button>
+      <div id="status" class="status hidden"></div>
+      <button id="btn-signout" class="btn-link">Sign out</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
